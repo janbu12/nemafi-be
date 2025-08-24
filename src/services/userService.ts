@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { registerValidation, loginValidation, createUserValidation, updateUserValidation } from '../validation/user-validation.js';
-import { toUserDto } from '../domain/user.domain.js';
+import { toUserDto } from '../models/user.model.js';
 
 // Auth
 async function registerUser(input: { email: string, password: string, name?: string }) {
