@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   await prisma.user.createMany({
     data: [
-      { email: 'admin@example.com', name: 'Admin' },
-      { email: 'user@example.com', name: 'User' },
+      { email: 'admin@example.com', name: 'Admin', password: bcrypt.hashSync('password123', 10)},
+      { email: 'user@example.com', name: 'User', password: bcrypt.hashSync('password123', 10)},
     ],
     skipDuplicates: true, // biar ga error kalau dijalankan berulang
   });
