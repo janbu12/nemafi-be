@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { registerValidation, loginValidation, createUserValidation, updateUserValidation } from '../validation/user-validation.js';
+import { toUserDto } from '../domain/user.domain.js';
 
 // Auth
 async function registerUser(input: { email: string, password: string, name?: string }) {
@@ -17,7 +18,7 @@ async function registerUser(input: { email: string, password: string, name?: str
     });
 
     const token = generateToken(user.id, user.email);
-    return { user: { id: user.id, email: user.email, name: user.name }, token };
+    return { user: toUserDto(user), token };
 }
 
 async function loginUser(input: { email: string, password: string }) {
@@ -30,7 +31,7 @@ async function loginUser(input: { email: string, password: string }) {
     if (!valid) throw { status: 401, message: 'Invalid email or password' };
 
     const token = generateToken(user.id, user.email);
-    return { user: { id: user.id, email: user.email, name: user.name }, token };
+    return { user: toUserDto(user), token };
 }
 
 function generateToken(id: number, email: string) {
@@ -39,19 +40,22 @@ function generateToken(id: number, email: string) {
 
 // User CRUD
 async function listUsers() {
-    return prismaClient.user.findMany({ orderBy: { id: 'asc' } });
+    const users = await prismaClient.user.findMany({ orderBy: { id: 'asc' } });
+    return users.map(toUserDto);
 }
 
 async function getUser(id: number) {
-    return prismaClient.user.findUnique({ where: { id } });
+    const user = await prismaClient.user.findUnique({ where: { id } });
+    return user ? toUserDto(user) : null;
 }
 
 async function createUser(input: { email: string, name?: string, password: string }) {
     const data = createUserValidation.parse(input);
     const hashed = await bcrypt.hash(data.password, 10);
-    return prismaClient.user.create({
+    const user = await prismaClient.user.create({
         data: { email: data.email, name: data.name, password: hashed }
     });
+    return toUserDto(user);
 }
 
 async function updateUser(id: number, input: { email?: string, name?: string | null }) {
