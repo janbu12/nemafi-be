@@ -2,24 +2,6 @@ import { Request, Response } from 'express';
 import userService from '../services/userService.js';
 import { success } from '../utils/responseHandler.js';
 
-async function login(req: Request, res: Response, next: Function) {
-    try {
-        const result = await userService.loginUser(req.body);
-        return success(res, result, 'Login berhasil');
-    } catch (e) {
-        next(e);
-    }
-}
-
-async function register(req: Request, res: Response, next: Function) {
-    try {
-        const result = await userService.registerUser(req.body);
-        return success(res, result, 'Register berhasil', 201);
-    } catch (e) {
-        next(e);
-    }
-}
-
 async function listUsers(_req: Request, res: Response, next: Function) {
     try {
         const users = await userService.listUsers();
@@ -70,8 +52,6 @@ async function deleteUser(req: Request, res: Response, next: Function) {
 }
 
 export default {
-    login,
-    register,
     listUsers,
     getUser,
     createUser,

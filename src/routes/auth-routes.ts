@@ -1,10 +1,10 @@
 import { Router } from "express";
-import userController from "../controllers/user-controller";
+import authController from "../controllers/auth-controller";
 
 export const authRouter = Router();
 
-authRouter.post('/login', userController.login);
-authRouter.post('/register', userController.register);
+authRouter.post('/login', authController.login);
+authRouter.post('/register', authController.register);
 
 authRouter.post('/logout', (_req, res) => {});
 authRouter.post('/refresh-token', (_req, res) => {});

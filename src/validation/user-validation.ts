@@ -11,15 +11,7 @@ const updateUserValidation = z.object({
     name: z.string().min(1).nullable().optional(),
 });
 
-const registerValidation = createUserValidation;
-const loginValidation = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-});
-
 export {
     createUserValidation,
     updateUserValidation,
-    registerValidation,
-    loginValidation,
 };
