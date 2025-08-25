@@ -33,7 +33,15 @@ async function loginUser(input: { email: string, password: string }) {
     return { user: toUserDto(user), token };
 }
 
+async function logoutUser(token: string) {
+    await prismaClient.tokenBlacklist.create({
+        data: { token },
+    });
+    return { message: "Logout successful" };
+}
+
 export default {
     registerUser,
     loginUser,
+    logoutUser,
 }

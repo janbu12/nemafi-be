@@ -14,6 +14,15 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
         return res.status(401).json({ error: 'Unauthorized' });
     }
     const token = authHeader.split(' ')[1];
+
+    const blacklistedToken = await prismaClient.tokenBlacklist.findUnique({
+        where: { token },
+    });
+
+    if (blacklistedToken) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+
     try {
         const payload = jwt.verify(token, env.JWT_SECRET) as { id: number, email: string };
         const user = await prismaClient.user.findUnique({

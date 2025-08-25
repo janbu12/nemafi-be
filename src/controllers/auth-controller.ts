@@ -20,7 +20,19 @@ async function register(req: Request, res: Response, next: Function) {
     }
 }
 
+async function logout(req: Request, res: Response, next: Function) {
+    try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
+        const result = await authService.logoutUser(token!);
+        return success(res, result, 'Logout berhasil');
+    } catch (e) {
+        next(e);
+    }
+}
+
 export default {
     login,
-    register
+    register,
+    logout
 }

@@ -20,6 +20,12 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model TokenBlacklist {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  createdAt DateTime @default(now())
+}
+
 enum Role {
   CUSTOMER
   TECHNICIAN
