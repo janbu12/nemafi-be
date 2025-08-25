@@ -2,6 +2,7 @@ import { prismaClient } from '../application/prisma.js';
 import bcrypt from 'bcryptjs';
 import { createUserValidation, updateUserValidation } from '../validation/user-validation.js';
 import { toUserDto } from '../models/user.model.js';
+import { AuthRequest } from '../middlewares/authMiddleware.js';
 
 
 
@@ -34,10 +35,16 @@ async function deleteUser(id: number) {
     return prismaClient.user.delete({ where: { id } });
 }
 
+async function meProfile(req: AuthRequest) {
+    const user = req.user;
+    return user ? toUserDto(user) : null;
+}
+
 export default {
     listUsers,
     getUser,
     createUser,
     updateUser,
     deleteUser,
+    meProfile,
 };
