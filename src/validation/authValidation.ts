@@ -1,5 +1,5 @@
 import z from "zod";
-import { createUserValidation } from "./user-validation";
+import { createUserValidation } from "./userValidation";
 
 const registerValidation = createUserValidation;
 const loginValidation = z.object({
