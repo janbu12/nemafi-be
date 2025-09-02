@@ -1,5 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
-import { createCategoryPackageValidation, updateCategoryPackageValidation } from '../validation/category-package-validation.js';
+import { createCategoryPackageValidation, updateCategoryPackageValidation } from '../validation/categoryPackageValidation.js';
 
 async function createCategory(data: { name: string }) {
   const validatedData = createCategoryPackageValidation.parse(data);

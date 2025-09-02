@@ -16,6 +16,7 @@ model User {
   name      String?
   password  String
   role      Role     @default(CUSTOMER)
+  orders     Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -30,6 +31,19 @@ enum Role {
   CUSTOMER
   TECHNICIAN
   TECH_ADMIN
+}
+
+enum Status {
+  PENDING_REVIEW
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  SURVEY_SCHEDULED
+  SURVEY_COMPLETED
+  WAITING_FOR_ASSIGNMENT
+  TECHNICIAN_ASSIGNED
+  INSTALLATION_IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 model CategoryPackage {
@@ -48,6 +62,26 @@ model Package {
   metadata          Json
   category          CategoryPackage @relation(fields: [categoryId], references: [id])
   categoryId        Int
+  orderItems        OrderItem[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+model Order {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  status      Status    @default(PENDING_REVIEW)
+  total       Float
+  items       OrderItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model OrderItem {
+  id        Int       @id @default(autoincrement())
+  order     Order     @relation(fields: [orderId], references: [id])
+  orderId   Int
+  package   Package   @relation(fields: [packageId], references: [id])
+  packageId Int
 }

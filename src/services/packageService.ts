@@ -1,5 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
-import { createPackageValidation, updatePackageValidation } from '../validation/package-validation.js';
+import { createPackageValidation, updatePackageValidation } from '../validation/packageValidation.js';
 import { Prisma } from '@prisma/client';
 
 async function createPackage(data: {

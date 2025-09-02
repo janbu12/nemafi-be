@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { userRouter } from './user-routes.js';
-import { publicRouter } from './public-routes.js';
-import { authRouter } from './auth-routes.js';
-import { techAdminRouter } from './techAdmin-routes.js';
-import { technicianRouter } from './technician-routes.js';
+import { userRouter } from './userRoutes.js';
+import { publicRouter } from './publicRoutes.js';
+import { authRouter } from './authRoutes.js';
+import { techAdminRouter } from './techAdminRoutes.js';
+import { technicianRouter } from './technicianRoutes.js';
 import { categoryPackageRoutes } from './categoryPackageRoutes.js';
 import { packageRoutes } from './packageRoutes.js';
 
