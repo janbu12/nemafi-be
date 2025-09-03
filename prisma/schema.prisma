@@ -13,12 +13,26 @@ generator client {
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
-  name      String?
+  fullname  String   @default("User")
   password  String
   role      Role     @default(CUSTOMER)
-  orders     Order[]
+  orders    Order[]
+  profile   Profile?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id            Int      @id @default(autoincrement())
+  user_id       Int      @unique
+  user          User     @relation(fields: [user_id], references: [id])
+  phone_number  String
+  image_url     String?
+  full_address  String
+  province      String
+  city          String
+  district      String
+  subdistrict   String
 }
 
 model TokenBlacklist {
@@ -59,7 +73,7 @@ model Package {
   name              String
   price             Float
   description       String
-  metadata          Json
+  metadata          Json?
   category          CategoryPackage @relation(fields: [categoryId], references: [id])
   categoryId        Int
   orderItems        OrderItem[]
