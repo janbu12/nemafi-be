@@ -6,14 +6,37 @@ import { toUserDto } from "../models/userModel";
 
 // Auth
 async function registerUser(input: { email: string, password: string, name?: string }) {
-    const data = registerValidation.parse(input);
+     const data = registerValidation.parse(input);
 
     const existing = await prismaClient.user.findUnique({ where: { email: data.email } });
     if (existing) throw { status: 400, message: 'Email already registered' };
 
     const hashed = await bcrypt.hash(data.password, 10);
-    const user = await prismaClient.user.create({
-        data: { email: data.email, password: hashed, name: data.name }
+
+    // Gunakan transaksi untuk memastikan User dan Profile dibuat bersamaan
+    const user = await prismaClient.$transaction(async (prisma) => {
+        const newUser = await prisma.user.create({
+            data: {
+                email: data.email,
+                password: hashed,
+                fullname: data.fullname,
+            }
+        });
+
+        await prisma.profile.create({
+            data: {
+                user_id: newUser.id,
+                phone_number: data.phone_number,
+                full_address: data.full_address,
+                province: data.province,
+                city: data.city,
+                district: data.district,
+                subdistrict: data.subdistrict,
+                image_url: data.image_url,
+            }
+        });
+
+        return newUser;
     });
 
     const token = utils.generateToken(user.id, user.email);

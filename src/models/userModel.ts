@@ -1,11 +1,6 @@
+import { Role } from "@prisma/client";
 import { Order } from "./orderModel";
 import { Profile } from "./profileModel";
-
-export enum Role {
-  CUSTOMER = 'CUSTOMER',
-  TECHNICIAN = 'TECHNICIAN',
-  TECH_ADMIN = 'TECH_ADMIN'
-}
 
 export interface User {
   id: number;

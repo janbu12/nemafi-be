@@ -21,7 +21,7 @@ async function createUser(input: { email: string, name?: string, password: strin
     const data = createUserValidation.parse(input);
     const hashed = await bcrypt.hash(data.password, 10);
     const user = await prismaClient.user.create({
-        data: { email: data.email, name: data.name, password: hashed }
+        data: { email: data.email, fullname: data.name, password: hashed }
     });
     return toUserDto(user);
 }
@@ -35,16 +35,10 @@ async function deleteUser(id: number) {
     return prismaClient.user.delete({ where: { id } });
 }
 
-async function meProfile(req: AuthRequest) {
-    const user = req.user;
-    return user ? toUserDto(user) : null;
-}
-
 export default {
     listUsers,
     getUser,
     createUser,
     updateUser,
     deleteUser,
-    meProfile,
 };
