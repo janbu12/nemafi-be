@@ -6,20 +6,25 @@ import { toUserDto } from "../models/userModel";
 
 // Auth
 async function registerUser(input: { email: string, password: string, name?: string }) {
-     const data = registerValidation.parse(input);
+    const data = registerValidation.parse(input);
 
-    const existing = await prismaClient.user.findUnique({ where: { email: data.email } });
-    if (existing) throw { status: 400, message: 'Email already registered' };
+    // 1. Validasi email dan paket
+    const existingUser = await prismaClient.user.findUnique({ where: { email: data.email } });
+    if (existingUser) throw { status: 400, message: 'Email already registered' };
+
+    const selectedPackage = await prismaClient.package.findUnique({ where: { id: data.packageId } });
+    if (!selectedPackage) throw { status: 404, message: 'Package not found' };
 
     const hashed = await bcrypt.hash(data.password, 10);
 
-    // Gunakan transaksi untuk memastikan User dan Profile dibuat bersamaan
+    // 2. Gunakan transaksi untuk membuat User, Profile, dan Order
     const user = await prismaClient.$transaction(async (prisma) => {
         const newUser = await prisma.user.create({
             data: {
                 email: data.email,
                 password: hashed,
                 fullname: data.fullname,
+                role: 'CUSTOMER', // Pastikan role diset sebagai CUSTOMER
             }
         });
 
@@ -33,6 +38,20 @@ async function registerUser(input: { email: string, password: string, name?: str
                 district: data.district,
                 subdistrict: data.subdistrict,
                 image_url: data.image_url,
+            }
+        });
+        
+        // Buat Order baru
+        await prisma.order.create({
+            data: {
+                userId: newUser.id,
+                total: selectedPackage.price,
+                status: 'PENDING_REVIEW',
+                items: {
+                    create: {
+                        packageId: selectedPackage.id
+                    }
+                }
             }
         });
 

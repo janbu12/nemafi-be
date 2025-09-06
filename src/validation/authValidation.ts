@@ -15,6 +15,9 @@ const registerValidation = z.object({
     district: z.string().min(3),
     subdistrict: z.string().min(3),
     image_url: z.string().url().optional(), // image_url bisa tetap opsional
+
+    // Data untuk Order (wajib ada)
+    packageId: z.number().int().positive(),
 });
 
 const loginValidation = z.object({

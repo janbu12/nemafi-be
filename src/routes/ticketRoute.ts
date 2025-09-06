@@ -1,0 +1,18 @@
+import { Router } from 'express';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
+import { Role } from '@prisma/client';
+import ticketController from '../controllers/ticketController.js';
+
+export const ticketRouter = Router();
+
+ticketRouter.use(authMiddleware);
+
+// Routes untuk Tech Admin
+ticketRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), ticketController.create);
+ticketRouter.get('/', roleMiddleware([Role.TECH_ADMIN]), ticketController.getAll);
+ticketRouter.patch('/:id/assign', roleMiddleware([Role.TECH_ADMIN]), ticketController.assign);
+
+// Routes untuk Teknisi
+ticketRouter.get('/my-tickets', roleMiddleware([Role.TECHNICIAN]), ticketController.getMy);
+ticketRouter.patch('/:id/status', roleMiddleware([Role.TECHNICIAN]), ticketController.updateStatus);

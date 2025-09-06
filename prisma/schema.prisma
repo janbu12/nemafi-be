@@ -18,6 +18,7 @@ model User {
   role      Role     @default(CUSTOMER)
   orders    Order[]
   profile   Profile?
+  assignedTickets  Ticket[]  @relation("AssignedTickets")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -60,6 +61,13 @@ enum Status {
   CANCELLED
 }
 
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 model CategoryPackage {
   id        Int       @id @default(autoincrement())
   name      String    @unique
@@ -88,6 +96,7 @@ model Order {
   status      Status    @default(PENDING_REVIEW)
   total       Float
   items       OrderItem[]
+  ticket    Ticket?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -98,4 +107,17 @@ model OrderItem {
   orderId   Int
   package   Package   @relation(fields: [packageId], references: [id])
   packageId Int
+}
+
+model Ticket {
+  id           Int          @id @default(autoincrement())
+  order        Order        @relation(fields: [orderId], references: [id])
+  orderId      Int          @unique // Satu tiket untuk satu order
+  technician   User?        @relation("AssignedTickets", fields: [technicianId], references: [id])
+  technicianId Int?
+  status       TicketStatus @default(OPEN)
+  title        String
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
