@@ -8,6 +8,7 @@ import { categoryPackageRoutes } from './categoryPackageRoutes.js';
 import { packageRoutes } from './packageRoutes.js';
 import { ticketRouter } from './ticketRoute.js';
 import { coveredAreaRouter } from './coveredAreaRoutes.js';
+import { routerRoutes } from './routerRoutes.js';
 
 
 export const router = Router();
@@ -19,6 +20,7 @@ router.use('/category-packages', categoryPackageRoutes);
 router.use('/packages', packageRoutes);
 router.use('/tickets', ticketRouter);
 router.use('/covered-areas', coveredAreaRouter);
+router.use('/routers', routerRoutes);
 
 router.use(techAdminRouter);
 router.use(technicianRouter);

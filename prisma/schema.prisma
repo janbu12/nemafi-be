@@ -34,6 +34,14 @@ model Profile {
   city          String
   district      String
   subdistrict   String
+
+  // -- Kolom baru untuk integrasi MikroTik --
+  routerId      Int?      // Router mana yang akan digunakan user ini
+  router        Router?   @relation(fields: [routerId], references: [id])
+  pppUsername   String?   @unique // Username untuk PPP Secret
+  pppPassword   String?   // Password untuk PPP Secret
+  pppProfile    String?   // Profil/paket PPP (e.g., 'Paket-10Mbps')
+  isPppActive   Boolean   @default(true)
 }
 
 model TokenBlacklist {
@@ -142,4 +150,16 @@ model CoverageCheckHistory {
   village      String
   isCovered    Boolean  // Mencatat hasil pengecekan
   checkedAt    DateTime @default(now())
+}
+
+model Router {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  host      String
+  user      String
+  password  String
+  port      Int?     @default(8728)
+  profiles  Profile[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
