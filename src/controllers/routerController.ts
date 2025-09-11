@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import routerService from '../services/routerService.js';
 import { success } from '../utils/responseHandler.js';
+import mikrotikService from '../services/mikrotikService.js';
 
 async function create(req: Request, res: Response, next: NextFunction) {
   try {
@@ -51,4 +52,14 @@ async function remove(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export default { create, getAll, getById, update, remove };
+async function testConnection(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const result = await mikrotikService.testConnection(id);
+    return success(res, result, result.message);
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default { create, getAll, getById, update, remove,testConnection };

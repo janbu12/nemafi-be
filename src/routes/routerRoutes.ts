@@ -6,7 +6,6 @@ import { Role } from '@prisma/client';
 
 export const routerRoutes = Router();
 
-// Lindungi semua rute di bawah ini hanya untuk TECH_ADMIN
 routerRoutes.use(authMiddleware, roleMiddleware([Role.TECH_ADMIN]));
 
 routerRoutes.post('/', routerController.create);
@@ -14,3 +13,5 @@ routerRoutes.get('/', routerController.getAll);
 routerRoutes.get('/:id', routerController.getById);
 routerRoutes.put('/:id', routerController.update);
 routerRoutes.delete('/:id', routerController.remove);
+
+routerRoutes.post('/:id/test-connection', routerController.testConnection);

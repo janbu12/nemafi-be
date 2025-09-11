@@ -85,10 +85,24 @@ async function getActiveUsers(routerId: number) {
   }
 }
 
+/**
+ * Mengetes koneksi ke sebuah router.
+ */
+async function testConnection(routerId: number) {
+  try {
+    const client = await getRouterConnection(routerId);
+    await client.close();
+    return { success: true, message: 'Connection successful.' };
+  } catch (err: any) {
+    throw { status: 500, message: `Failed to connect to router: ${err.message}` };
+  }
+}
+
 export default {
   addPppSecret,
   updatePppProfile,
   disablePppSecret,
   enablePppSecret,
   getActiveUsers,
+  testConnection,
 };
