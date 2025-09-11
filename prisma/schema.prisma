@@ -121,3 +121,25 @@ model Ticket {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
+
+model CoveredArea {
+  id        Int      @id @default(autoincrement())
+  province  String
+  city      String // City or Regency
+  district  String
+  village   String // Village or Sub-district
+  createdAt DateTime @default(now())
+
+  @@unique([province, city, district, village], name: "unique_area_constraint")
+}
+
+model CoverageCheckHistory {
+  id           Int      @id @default(autoincrement())
+  fullAddress  String
+  province     String
+  city         String
+  district     String
+  village      String
+  isCovered    Boolean  // Mencatat hasil pengecekan
+  checkedAt    DateTime @default(now())
+}

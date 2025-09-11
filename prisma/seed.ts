@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clean up existing data
+  await prisma.coverageCheckHistory.deleteMany({});
+  await prisma.coveredArea.deleteMany({});
   await prisma.package.deleteMany({});
   await prisma.categoryPackage.deleteMany({});
   await prisma.user.deleteMany({});
@@ -70,6 +72,39 @@ async function main() {
   for (const pkg of packages) {
     await prisma.package.create({ data: pkg });
   }
+
+  // --- Seed Covered Areas ---
+  const coveredAreas = [
+    {
+      province: 'DKI Jakarta',
+      city: 'Jakarta Selatan',
+      district: 'Kebayoran Baru',
+      village: 'Senayan',
+    },
+    {
+      province: 'DKI Jakarta',
+      city: 'Jakarta Selatan',
+      district: 'Kebayoran Baru',
+      village: 'Selong',
+    },
+    {
+      province: 'Jawa Barat',
+      city: 'Kota Bandung',
+      district: 'Sukajadi',
+      village: 'Pasteur',
+    },
+     {
+      province: 'Jawa Barat',
+      city: 'Kota Bandung',
+      district: 'Coblong',
+      village: 'Dago',
+    }
+  ];
+
+  await prisma.coveredArea.createMany({
+    data: coveredAreas,
+    skipDuplicates: true,
+  });
 }
 
 main()
