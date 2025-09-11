@@ -1,5 +1,6 @@
 import { Router } from "express";
 import coveredAreaController from "../controllers/coveredAreaController";
+import recommendationController from "../controllers/recommendationController";
 
 export const publicRouter = Router();
 
@@ -12,3 +13,4 @@ publicRouter.get('/health', (_req, res) => {
 });
 
 publicRouter.post('/covered-areas/check', coveredAreaController.check);
+publicRouter.post('/recommendations/package', recommendationController.getRecommendation);
