@@ -5,7 +5,6 @@ import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import { Role } from '@prisma/client';
 import profileController from '../controllers/profileController.js';
 
-
 export const userRouter = Router();
 userRouter.use(authMiddleware);
 
@@ -16,8 +15,3 @@ userRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), userController.createUse
 userRouter.patch('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.updateUser);
 userRouter.delete('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.deleteUser);
 
-// Profile Route
-userRouter.get('/profile', profileController.meProfile);
-userRouter.patch('/profile', profileController.updateProfile);
-userRouter.patch('/profile/email', profileController.updateEmail);
-userRouter.patch('/profile/password', profileController.updatePassword);
