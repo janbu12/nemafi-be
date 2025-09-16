@@ -1,6 +1,6 @@
 import { Router } from "express";
-import coveredAreaController from "../controllers/coveredAreaController";
-import recommendationController from "../controllers/recommendationController";
+import coveredAreaController from "../controllers/coveredAreaController.js";
+import recommendationController from "../controllers/recommendationController.js";
 
 export const publicRouter = Router();
 

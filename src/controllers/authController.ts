@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { success } from "../utils/responseHandler";
-import authService from "../services/authService";
+import { success } from "../utils/responseHandler.js";
+import authService from "../services/authService.js";
 
 async function login(req: Request, res: Response, next: Function) {
     try {

@@ -1,8 +1,8 @@
-import { prismaClient } from "../application/prisma";
-import utils from "../utils/utils";
+import { prismaClient } from "../application/prisma.js";
+import utils from "../utils/utils.js";
 import bcrypt from 'bcryptjs';
-import { loginValidation, registerValidation } from "../validation/authValidation";
-import { toUserDto } from "../models/userModel";
+import { loginValidation, registerValidation } from "../validation/authValidation.js";
+import { toUserDto } from "../models/userModel.js";
 
 // Auth
 async function registerUser(input: { email: string, password: string, name?: string }) {
