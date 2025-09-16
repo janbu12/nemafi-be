@@ -52,20 +52,10 @@ async function deleteUser(req: Request, res: Response, next: Function) {
     }
 }
 
-async function meProfile(req: AuthRequest, res: Response, next: Function) {
-    try {
-        const result = await userService.meProfile(req);
-        return success(res, result, 'Profile');
-    } catch (e) {
-        next(e);
-    }
-}
-
 export default {
     listUsers,
     getUser,
     createUser,
     updateUser,
     deleteUser,
-    meProfile
 }
