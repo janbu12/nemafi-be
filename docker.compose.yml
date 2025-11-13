@@ -1,19 +1,52 @@
 services:
-db:
-  image: postgres:16
-  container_name: nemafi_db
-  environment:
-  POSTGRES_USER: app
-  POSTGRES_PASSWORD: app
-  POSTGRES_DB: appdb
-  ports:
-  - "5432:5432"
-  volumes:
-  - db_data:/var/lib/postgresql/data
-  healthcheck:
-    test: ["CMD-SHELL", "pg_isready -U app -d appdb"]
-    interval: 5s
-    timeout: 5s
-    retries: 10
+  db-main:
+    image: postgres:16
+    container_name: nemafi_db_main
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_main_data:/var/lib/postgresql/data
+      - ./postgres-config/main/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres-config/main/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-slave:
+    image: postgres:16
+    container_name: nemafi_db_slave
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+      PGUSER: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_slave_data:/var/lib/postgresql/data
+      - ./postgres-config/slave/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres-config/slave/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    depends_on:
+      db-main:
+        condition: service_healthy
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
-  db_data:
+  db_main_data:
+  db_slave_data:

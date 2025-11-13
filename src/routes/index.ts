@@ -10,6 +10,7 @@ import { ticketRouter } from './ticketRoute.js';
 import { coveredAreaRouter } from './coveredAreaRoutes.js';
 import { routerRoutes } from './routerRoutes.js';
 import { profileRouter } from './profileRoutes.js';
+import healthRouter from './healthRoutes.js';
 
 
 export const router = Router();
@@ -23,6 +24,7 @@ router.use('/packages', packageRoutes);
 router.use('/tickets', ticketRouter);
 router.use('/covered-areas', coveredAreaRouter);
 router.use('/routers', routerRoutes);
+router.use('/health', healthRouter);
 
 router.use(techAdminRouter);
 router.use(technicianRouter);
