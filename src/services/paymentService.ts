@@ -98,8 +98,9 @@ async function verifyPaymentNotification(notificationBody: any) {
             signature_key
         } = notificationBody;
 
+        const status_code = 200
         // Verify signature
-        const dataToSign = `${order_id}${transaction_id}${gross_amount}${MIDTRANS_SERVER_KEY}`;
+        const dataToSign = `${order_id}${status_code}${gross_amount}${MIDTRANS_SERVER_KEY}`;
         const calculatedSignature = crypto.createHash('sha512').update(dataToSign).digest('hex');
 
         if (calculatedSignature !== signature_key) {
