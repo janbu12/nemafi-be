@@ -98,15 +98,23 @@ model Package {
 }
 
 model Order {
-  id          Int       @id @default(autoincrement())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      Int
-  status      Status    @default(PENDING_REVIEW)
-  total       Float
-  items       OrderItem[]
-  ticket    Ticket?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  user                  User      @relation(fields: [userId], references: [id])
+  userId                Int
+  status                Status    @default(PENDING_REVIEW)
+  total                 Float
+  items                 OrderItem[]
+  ticket                Ticket?
+  // Payment fields for Midtrans
+  midtransTransactionId String?   @unique
+  midtransOrderId       String?   @unique
+  redirectUrl           String?   // Redirect URL dari Midtrans
+  // Admin review fields
+  reviewedBy            Int?      // User ID dari admin yang review
+  reviewNotes           String?   // Catatan dari admin
+  reviewedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model OrderItem {
