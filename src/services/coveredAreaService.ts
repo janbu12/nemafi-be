@@ -120,9 +120,32 @@ async function addCoveredArea(data: any) {
 }
 
 async function getAllCoveredAreas() {
-  return prismaClient.coveredArea.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  return prismaClient.$queryRaw<
+    Array<{
+      id: number;
+      province: string;
+      city: string;
+      district: string;
+      village: string;
+      radius_m: number | null;
+      latitude: number | null;
+      longitude: number | null;
+      createdAt: Date;
+    }>
+  >`
+    SELECT
+      id,
+      province,
+      city,
+      district,
+      village,
+      radius_m,
+      "createdAt",
+      ST_Y(center::geometry) AS latitude,
+      ST_X(center::geometry) AS longitude
+    FROM "CoveredArea"
+    ORDER BY "createdAt" DESC
+  `;
 }
 
 async function deleteCoveredArea(id: number) {
@@ -130,9 +153,34 @@ async function deleteCoveredArea(id: number) {
 }
 
 async function getCheckHistory() {
-    return prismaClient.coverageCheckHistory.findMany({
-        orderBy: { checkedAt: 'desc' },
-    });
+    return prismaClient.$queryRaw<
+      Array<{
+        id: number;
+        fullAddress: string;
+        province: string;
+        city: string;
+        district: string;
+        village: string;
+        isCovered: boolean;
+        checkedAt: Date;
+        latitude: number | null;
+        longitude: number | null;
+      }>
+    >`
+      SELECT
+        id,
+        "fullAddress",
+        province,
+        city,
+        district,
+        village,
+        "isCovered",
+        "checkedAt",
+        ST_Y("userLocation"::geometry) AS latitude,
+        ST_X("userLocation"::geometry) AS longitude
+      FROM "CoverageCheckHistory"
+      ORDER BY "checkedAt" DESC
+    `;
 }
 
 export default {
