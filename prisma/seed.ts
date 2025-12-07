@@ -80,31 +80,67 @@ async function main() {
       city: 'Jakarta Selatan',
       district: 'Kebayoran Baru',
       village: 'Senayan',
+      latitude: -6.2250,
+      longitude: 106.8020,
+      radius_m: 10000,
     },
     {
       province: 'DKI Jakarta',
       city: 'Jakarta Selatan',
       district: 'Kebayoran Baru',
       village: 'Selong',
+      latitude: -6.2444,
+      longitude: 106.8054,
+      radius_m: 10000,
     },
     {
       province: 'Jawa Barat',
       city: 'Kota Bandung',
       district: 'Sukajadi',
       village: 'Pasteur',
+      latitude: -6.8893,
+      longitude: 107.5952,
+      radius_m: 10000,
     },
      {
       province: 'Jawa Barat',
       city: 'Kota Bandung',
       district: 'Coblong',
       village: 'Dago',
+      latitude: -6.8896,
+      longitude: 107.6191,
+      radius_m: 10000,
     }
   ];
 
-  await prisma.coveredArea.createMany({
-    data: coveredAreas,
-    skipDuplicates: true,
-  });
+  for (const area of coveredAreas) {
+    const created = await prisma.coveredArea.upsert({
+      where: {
+        unique_area_constraint: {
+          province: area.province,
+          city: area.city,
+          district: area.district,
+          village: area.village,
+        }
+      },
+      create: {
+        province: area.province,
+        city: area.city,
+        district: area.district,
+        village: area.village,
+        radius_m: area.radius_m,
+      },
+      update: {
+        radius_m: area.radius_m,
+      },
+    });
+
+    await prisma.$executeRawUnsafe(`
+      UPDATE "CoveredArea"
+      SET center = ST_SetSRID(ST_MakePoint(${area.longitude}, ${area.latitude}), 4326)
+      WHERE id = ${created.id};
+    `);
+  }
 }
 
 main()

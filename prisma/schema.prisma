@@ -144,6 +144,8 @@ model CoveredArea {
   city      String // City or Regency
   district  String
   village   String // Village or Sub-district
+  radius_m  Int?     @default(10000) // radius dalam meter (default 10 km)
+  center    Unsupported("geography")? // geography(Point, 4326)
   createdAt DateTime @default(now())
 
   @@unique([province, city, district, village], name: "unique_area_constraint")
@@ -156,6 +158,7 @@ model CoverageCheckHistory {
   city         String
   district     String
   village      String
+  userLocation Unsupported("geography")? // geography(Point, 4326)
   isCovered    Boolean  // Mencatat hasil pengecekan
   checkedAt    DateTime @default(now())
 }

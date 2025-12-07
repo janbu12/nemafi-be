@@ -6,6 +6,9 @@ export const createCoveredAreaValidation = z.object({
   city: z.string().min(3),
   district: z.string().min(3),
   village: z.string().min(3),
+  latitude: z.coerce.number(),
+  longitude: z.coerce.number(),
+  radius_m: z.coerce.number().positive().optional(),
 });
 
 // Diubah dari checkCoverageValidation
@@ -15,4 +18,6 @@ export const checkCoveredAreaValidation = z.object({
   city: z.string().min(3),
   district: z.string().min(3),
   village: z.string().min(3),
+  latitude: z.coerce.number(),
+  longitude: z.coerce.number(),
 });
