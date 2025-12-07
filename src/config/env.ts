@@ -7,6 +7,7 @@ const envSchema = z.object({
     DATABASE_URL: z.string().url(),
     JWT_SECRET: z.string().min(16),
     GEMINI_API_KEY: z.string().min(1),
+    GEMINI_MODEL: z.string().min(1),
 });
 
 
