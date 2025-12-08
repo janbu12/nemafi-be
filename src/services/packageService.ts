@@ -5,9 +5,12 @@ import { Prisma } from '@prisma/client';
 async function createPackage(data: {
   name: string;
   price: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+  isPopular?: boolean;
   description: string;
   categoryId: number;
-  metadata: Prisma.JsonObject;
+  metadata?: Prisma.JsonObject;
 }) {
   const validatedData = createPackageValidation.parse(data);
   return prismaClient.package.create({ data: validatedData });
@@ -26,6 +29,9 @@ async function updatePackage(
   data: {
     name?: string;
     price?: number;
+    downloadSpeed?: number;
+    uploadSpeed?: number;
+    isPopular?: boolean;
     description?: string;
     categoryId?: number;
     metadata?: Prisma.JsonObject;

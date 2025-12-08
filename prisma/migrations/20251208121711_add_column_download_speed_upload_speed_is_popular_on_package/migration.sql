@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "public"."Package" ADD COLUMN     "downloadSpeed" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+ADD COLUMN     "isPopular" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "uploadSpeed" DOUBLE PRECISION NOT NULL DEFAULT 0.0;

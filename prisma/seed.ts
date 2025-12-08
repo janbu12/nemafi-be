@@ -42,14 +42,20 @@ async function main() {
       price: 250000,
       description: 'Paket internet cepat untuk kebutuhan rumah tangga.',
       categoryId: residential.id,
-      metadata: { download_speed: 50, upload_speed: 10, unlimited_quota: true },
+      downloadSpeed: 20.0,
+      uploadSpeed: 5.0,
+      isPopular: true,
+      metadata: { unlimited_quota: true },
     },
     {
       name: 'Home Premium',
       price: 400000,
       description: 'Internet super cepat untuk streaming dan gaming.',
       categoryId: residential.id,
-      metadata: { download_speed: 100, upload_speed: 20, unlimited_quota: true, free_iptv: true },
+      downloadSpeed: 100.0,
+      uploadSpeed: 20.0,
+      isPopular: true,
+      metadata: { unlimited_quota: true, free_iptv: true },
     },
     // Business Packages
     {
@@ -57,7 +63,10 @@ async function main() {
       price: 600000,
       description: 'Koneksi internet stabil untuk bisnis Anda.',
       categoryId: business.id,
-      metadata: { download_speed: 150, upload_speed: 50, dedicated_support: true, static_ip: true },
+      downloadSpeed: 150.0,
+      uploadSpeed: 50.0,
+      isPopular: true,
+      metadata: { dedicated_support: true, static_ip: true },
     },
     // SOHO Packages
     {
@@ -65,7 +74,10 @@ async function main() {
       price: 500000,
       description: 'Solusi internet untuk Small Office Home Office.',
       categoryId: soho.id,
-      metadata: { download_speed: 100, upload_speed: 25, unlimited_quota: true },
+      downloadSpeed: 100,
+      uploadSpeed: 25,
+      isPopular: true,
+      metadata: { unlimited_quota: true },
     },
   ];
 

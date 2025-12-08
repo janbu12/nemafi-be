@@ -5,6 +5,9 @@ export interface Package {
   id: number;
   name: string;
   price: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+  isPopular: boolean;
   description: string;
   metadata?: Record<string, any> | null;
   category?: CategoryPackage;
