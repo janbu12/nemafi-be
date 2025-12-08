@@ -11,4 +11,5 @@ coveredAreaRouter.use(authMiddleware, roleMiddleware([Role.TECH_ADMIN]));
 coveredAreaRouter.post('/', coveredAreaController.addArea);
 coveredAreaRouter.get('/', coveredAreaController.getAllAreas);
 coveredAreaRouter.delete('/:id', coveredAreaController.deleteArea);
+coveredAreaRouter.put('/:id', coveredAreaController.updateArea);
 coveredAreaRouter.get('/history', coveredAreaController.getHistory);

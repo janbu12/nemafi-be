@@ -6,6 +6,7 @@ export const createCoveredAreaValidation = z.object({
   city: z.string().min(3),
   district: z.string().min(3),
   village: z.string().min(3),
+  fullAddress: z.string().min(5),
   latitude: z.coerce.number(),
   longitude: z.coerce.number(),
   radius_m: z.coerce.number().positive().optional(),

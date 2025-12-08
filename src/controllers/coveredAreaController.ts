@@ -43,6 +43,16 @@ async function deleteArea(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+async function updateArea(req: Request, res: Response, next: NextFunction) {
+  try {
+    const areaId = Number(req.params.id);
+    const result = await coveredAreaService.updateCoveredArea(areaId, req.body);
+    return success(res, result, 'Covered area updated successfully');
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function getHistory(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await coveredAreaService.getCheckHistory(); 
@@ -52,4 +62,4 @@ async function getHistory(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export default { check, addArea, getAllAreas, deleteArea, getHistory };
+export default { check, addArea, getAllAreas, deleteArea, getHistory, updateArea };

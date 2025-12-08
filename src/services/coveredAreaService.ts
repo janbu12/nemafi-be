@@ -98,6 +98,7 @@ async function addCoveredArea(data: any) {
           city: validatedData.city,
           district: validatedData.district,
           village: validatedData.village,
+          fullAddress: validatedData.fullAddress,
           radius_m,
         },
       });
@@ -119,6 +120,40 @@ async function addCoveredArea(data: any) {
   }
 }
 
+async function updateCoveredArea(id: number, data: any) {
+  const validatedData = createCoveredAreaValidation.parse(data);
+  const radius_m = validatedData.radius_m ?? DEFAULT_RADIUS_M;
+
+  const exists = await prismaClient.coveredArea.findUnique({ where: { id } });
+  if (!exists) {
+    throw { status: 404, message: 'Covered area not found' };
+  }
+
+  const updated = await prismaClient.$transaction(async (tx) => {
+    const area = await tx.coveredArea.update({
+      where: { id },
+      data: {
+        province: validatedData.province,
+        city: validatedData.city,
+        district: validatedData.district,
+        village: validatedData.village,
+        fullAddress: validatedData.fullAddress,
+        radius_m,
+      },
+    });
+
+    await tx.$executeRaw`
+      UPDATE "CoveredArea"
+      SET center = ST_SetSRID(ST_MakePoint(${validatedData.longitude}, ${validatedData.latitude}), 4326)
+      WHERE id = ${area.id}
+    `;
+
+    return { ...area, radius_m };
+  });
+
+  return updated;
+}
+
 async function getAllCoveredAreas() {
   return prismaClient.$queryRaw<
     Array<{
@@ -127,6 +162,7 @@ async function getAllCoveredAreas() {
       city: string;
       district: string;
       village: string;
+      fullAddress: string | null;
       radius_m: number | null;
       latitude: number | null;
       longitude: number | null;
@@ -139,6 +175,7 @@ async function getAllCoveredAreas() {
       city,
       district,
       village,
+      "fullAddress",
       radius_m,
       "createdAt",
       ST_Y(center::geometry) AS latitude,
@@ -153,7 +190,7 @@ async function deleteCoveredArea(id: number) {
 }
 
 async function getCheckHistory() {
-    return prismaClient.$queryRaw<
+    const history = await prismaClient.$queryRaw<
       Array<{
         id: number;
         fullAddress: string;
@@ -181,11 +218,40 @@ async function getCheckHistory() {
       FROM "CoverageCheckHistory"
       ORDER BY "checkedAt" DESC
     `;
+
+    const totalCovered = history.filter(h => h.isCovered).length;
+    const totalUncovered = history.length - totalCovered;
+
+    const byCity: Record<string, { covered: number; uncovered: number }> = {};
+    const byDistrict: Record<string, { city: string; covered: number; uncovered: number }> = {};
+
+    history.forEach(h => {
+      if (!byCity[h.city]) byCity[h.city] = { covered: 0, uncovered: 0 };
+      h.isCovered ? byCity[h.city].covered++ : byCity[h.city].uncovered++;
+
+      const districtKey = `${h.city}::${h.district}`;
+      if (!byDistrict[districtKey]) byDistrict[districtKey] = { city: h.city, covered: 0, uncovered: 0 };
+      h.isCovered ? byDistrict[districtKey].covered++ : byDistrict[districtKey].uncovered++;
+    });
+
+    return {
+      history,
+      stats: {
+        totalCovered,
+        totalUncovered,
+        byCity: Object.entries(byCity).map(([city, v]) => ({ city, covered: v.covered, uncovered: v.uncovered })),
+        byDistrict: Object.entries(byDistrict).map(([key, v]) => {
+          const [, district] = key.split("::");
+          return { city: v.city, district, covered: v.covered, uncovered: v.uncovered };
+        }),
+      },
+    };
 }
 
 export default {
   checkAvailability,
   addCoveredArea,
+  updateCoveredArea,
   getAllCoveredAreas,
   deleteCoveredArea,
   getCheckHistory

@@ -144,6 +144,7 @@ model CoveredArea {
   city      String // City or Regency
   district  String
   village   String // Village or Sub-district
+  fullAddress String?
   radius_m  Int?     @default(10000) // radius dalam meter (default 10 km)
   center    Unsupported("geography")? // geography(Point, 4326)
   createdAt DateTime @default(now())
