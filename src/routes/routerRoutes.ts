@@ -15,3 +15,5 @@ routerRoutes.put('/:id', routerController.update);
 routerRoutes.delete('/:id', routerController.remove);
 
 routerRoutes.post('/:id/test-connection', routerController.testConnection);
+routerRoutes.post('/:id/pppoe-users', routerController.addPppoeUser);
+routerRoutes.get('/:id/active-users', routerController.activeUsers);

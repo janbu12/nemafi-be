@@ -13,7 +13,9 @@ async function getAll() {
 }
 
 async function getById(id: number) {
-    return prismaClient.router.findUnique({ where: { id } });
+    return prismaClient.router.findUnique({
+        where: { id },
+    });
 }
 
 async function update(id: number, data: any) {

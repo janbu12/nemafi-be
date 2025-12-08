@@ -62,4 +62,28 @@ async function testConnection(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export default { create, getAll, getById, update, remove,testConnection };
+async function addPppoeUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const { name, password, profile } = req.body;
+    if (!name || !password) {
+      throw { status: 400, message: 'name and password are required' };
+    }
+    const result = await mikrotikService.createPppSecret(id, { name, password, profile });
+    return success(res, result, 'PPPoE user created');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function activeUsers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const result = await mikrotikService.getActiveUsers(id);
+    return success(res, result, 'Active users');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default { create, getAll, getById, update, remove, testConnection, addPppoeUser, activeUsers };

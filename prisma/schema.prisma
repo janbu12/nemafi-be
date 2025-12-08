@@ -192,7 +192,9 @@ model Router {
   host      String
   user      String
   password  String
-  port      Int?     @default(8728)
+  port      Int?     @default(8728) // deprecated
+  portApi   Int      @default(8728)
+  portSsh   Int      @default(22)
   profiles  Profile[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -5,7 +5,9 @@ export const createRouterValidation = z.object({
   host: z.string().min(1), // Bisa IP atau domain
   user: z.string().min(1),
   password: z.string().min(1),
-  port: z.number().int().positive().optional(),
+  port: z.number().int().positive().optional(), // deprecated
+  portApi: z.number().int().positive().default(8728),
+  portSsh: z.number().int().positive().default(22),
 });
 
 export const updateRouterValidation = z.object({
@@ -13,5 +15,7 @@ export const updateRouterValidation = z.object({
   host: z.string().min(1).optional(),
   user: z.string().min(1).optional(),
   password: z.string().min(1).optional(),
-  port: z.number().int().positive().optional(),
+  port: z.number().int().positive().optional(), // deprecated
+  portApi: z.number().int().positive().optional(),
+  portSsh: z.number().int().positive().optional(),
 });
