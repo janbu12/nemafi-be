@@ -12,6 +12,8 @@ import { routerRoutes } from './routerRoutes.js';
 import { profileRouter } from './profileRoutes.js';
 import { orderRoutes } from './orderRoutes.js';
 import { paymentRoutes } from './paymentRoutes.js';
+import { inventoryRoutes } from './inventoryRoutes.js';
+import { inventoryCategoryRoutes } from './inventoryCategoryRoutes.js';
 
 
 export const router = Router();
@@ -22,6 +24,8 @@ router.use('/profile', profileRouter);
 router.use('/auth', authRouter);
 router.use('/category-packages', categoryPackageRoutes);
 router.use('/packages', packageRoutes);
+router.use('/inventory-categories', inventoryCategoryRoutes);
+router.use('/inventories', inventoryRoutes);
 router.use('/tickets', ticketRouter);
 router.use('/covered-areas', coveredAreaRouter);
 router.use('/routers', routerRoutes);

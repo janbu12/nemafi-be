@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clean up existing data
+  await prisma.inventoryItem.deleteMany({});
+  await prisma.inventoryCategory.deleteMany({});
   await prisma.coverageCheckHistory.deleteMany({});
   await prisma.coveredArea.deleteMany({});
   await prisma.package.deleteMany({});
@@ -83,6 +85,41 @@ async function main() {
 
   for (const pkg of packages) {
     await prisma.package.create({ data: pkg });
+  }
+
+  // Seed Inventory Categories
+  const inventoryCategories = await prisma.inventoryCategory.createMany({
+    data: [
+      { name: 'Tiang' },
+      { name: 'Kabel' },
+      { name: 'Router' },
+      { name: 'Konektor' },
+      { name: 'Splitter' },
+      { name: 'ODP/ONT/ONU' },
+      { name: 'Aksesoris' },
+    ],
+    skipDuplicates: true,
+  });
+
+  const categoryMap = await prisma.inventoryCategory.findMany();
+  const findCategoryId = (name: string) => categoryMap.find((c) => c.name === name)?.id as number;
+
+  // Seed Inventory Items
+  const inventoryItems = [
+    { name: 'Tiang Besi 7m', stock: 50, unit: 'buah', categoryId: findCategoryId('Tiang') },
+    { name: 'Kabel Fiber Optik 12 Core', stock: 2500, unit: 'meter', categoryId: findCategoryId('Kabel') },
+    { name: 'Router WiFi Dual Band', stock: 120, unit: 'buah', categoryId: findCategoryId('Router') },
+    { name: 'Konektor SC/UPC', stock: 500, unit: 'buah', categoryId: findCategoryId('Konektor') },
+    { name: 'Splitter PLC 1:8', stock: 80, unit: 'buah', categoryId: findCategoryId('Splitter') },
+    { name: 'ODP 8 Port', stock: 30, unit: 'buah', categoryId: findCategoryId('ODP/ONT/ONU') },
+    { name: 'Clamp Tiang Fiber', stock: 200, unit: 'buah', categoryId: findCategoryId('Aksesoris') },
+    { name: 'Kabel Drop Core', stock: 1500, unit: 'meter', categoryId: findCategoryId('Kabel') },
+    { name: 'ONT Modem', stock: 95, unit: 'buah', categoryId: findCategoryId('ODP/ONT/ONU') },
+  ];
+
+  for (const item of inventoryItems) {
+    if (!item.categoryId) continue;
+    await prisma.inventoryItem.create({ data: item });
   }
 
   // --- Seed Covered Areas ---
