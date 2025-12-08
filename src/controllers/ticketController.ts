@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
 import ticketService from '../services/ticketService.js';
+import ticketCategoryService from '../services/ticketCategoryService.js';
 import { success } from '../utils/responseHandler.js';
 
 // Admin
@@ -55,4 +56,42 @@ async function getMy(req: AuthRequest, res: Response, next: NextFunction) {
     }
 }
 
-export default { create, assign, updateStatus, getAll, getMy };
+async function getCategories(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const result = await ticketCategoryService.list();
+    return success(res, result, 'Ticket categories');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function createCategory(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const result = await ticketCategoryService.create(req.body);
+    return success(res, result, 'Ticket category created', 201);
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function updateCategory(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const result = await ticketCategoryService.update(id, req.body);
+    return success(res, result, 'Ticket category updated');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function deleteCategory(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const result = await ticketCategoryService.remove(id);
+    return success(res, result, 'Ticket category deleted');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default { create, assign, updateStatus, getAll, getMy, getCategories, createCategory, updateCategory, deleteCategory };

@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clean up existing data
+  await prisma.ticket.deleteMany({});
+  await prisma.ticketCategory.deleteMany({});
   await prisma.inventoryItem.deleteMany({});
   await prisma.inventoryCategory.deleteMany({});
   await prisma.coverageCheckHistory.deleteMany({});
@@ -19,6 +21,17 @@ async function main() {
       { email: 'admin@example.com', fullname: 'Admin', password: bcrypt.hashSync('password123', 10), role: "TECH_ADMIN"},
       { email: 'tech@example.com', fullname: 'Tech', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},
       { email: 'user@example.com', fullname: 'User', password: bcrypt.hashSync('password123', 10), role: "CUSTOMER"},
+    ],
+    skipDuplicates: true,
+  });
+
+  // Seed Ticket Categories
+  await prisma.ticketCategory.createMany({
+    data: [
+      { name: 'customer' },
+      { name: 'technician' },
+      { name: 'termination' },
+      { name: 'installation' },
     ],
     skipDuplicates: true,
   });

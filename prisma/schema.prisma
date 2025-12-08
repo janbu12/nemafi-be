@@ -156,8 +156,18 @@ model Ticket {
   status       TicketStatus @default(OPEN)
   title        String
   description  String?
+  category     TicketCategory? @relation(fields: [categoryId], references: [id])
+  categoryId   Int?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model TicketCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CoveredArea {

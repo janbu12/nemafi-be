@@ -4,13 +4,18 @@ import { User } from '@prisma/client';
 
 // Untuk Admin: Membuat tiket untuk order tertentu
 async function createTicket(data: any) {
-  const { orderId, title, description } = createTicketValidation.parse(data);
+  const { orderId, title, description, categoryId } = createTicketValidation.parse(data);
 
   const order = await prismaClient.order.findUnique({ where: { id: orderId } });
   if (!order) throw { status: 404, message: 'Order not found' };
 
+  if (categoryId) {
+    const category = await prismaClient.ticketCategory.findUnique({ where: { id: categoryId } });
+    if (!category) throw { status: 404, message: 'Ticket category not found' };
+  }
+
   return prismaClient.ticket.create({
-    data: { orderId, title, description },
+    data: { orderId, title, description, categoryId },
   });
 }
 
@@ -50,7 +55,7 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
 // Untuk Admin: Melihat semua tiket
 async function getAllTickets() {
   return prismaClient.ticket.findMany({
-    include: { order: { include: { user: true } }, technician: true },
+    include: { order: { include: { user: true } }, technician: true, category: true },
   });
 }
 
@@ -58,7 +63,7 @@ async function getAllTickets() {
 async function getMyTickets(technician: User) {
     return prismaClient.ticket.findMany({
         where: { technicianId: technician.id },
-        include: { order: { include: { user: true } } },
+        include: { order: { include: { user: true } }, category: true },
     });
 }
 

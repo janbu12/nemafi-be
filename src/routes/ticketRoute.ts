@@ -11,6 +11,10 @@ ticketRouter.use(authMiddleware);
 // Routes untuk Tech Admin
 ticketRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), ticketController.create);
 ticketRouter.get('/', roleMiddleware([Role.TECH_ADMIN]), ticketController.getAll);
+ticketRouter.get('/categories', roleMiddleware([Role.TECH_ADMIN]), ticketController.getCategories);
+ticketRouter.post('/categories', roleMiddleware([Role.TECH_ADMIN]), ticketController.createCategory);
+ticketRouter.patch('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketController.updateCategory);
+ticketRouter.delete('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketController.deleteCategory);
 ticketRouter.patch('/:id/assign', roleMiddleware([Role.TECH_ADMIN]), ticketController.assign);
 
 // Routes untuk Teknisi
