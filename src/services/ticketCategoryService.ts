@@ -6,15 +6,25 @@ async function list() {
 }
 
 async function create(data: any) {
-  const { name } = ticketCategoryValidation.parse(data);
-  return prismaClient.ticketCategory.create({ data: { name: name.trim().toLowerCase() } });
+  const { name, isExpirable, expireHours } = ticketCategoryValidation.parse(data);
+  return prismaClient.ticketCategory.create({
+    data: {
+      name: name.trim().toLowerCase(),
+      isExpirable: Boolean(isExpirable),
+      expireHours: isExpirable ? expireHours : null,
+    },
+  });
 }
 
 async function update(id: number, data: any) {
-  const { name } = ticketCategoryValidation.parse(data);
+  const { name, isExpirable, expireHours } = ticketCategoryValidation.parse(data);
   return prismaClient.ticketCategory.update({
     where: { id },
-    data: { name: name.trim().toLowerCase() },
+    data: {
+      name: name.trim().toLowerCase(),
+      isExpirable: Boolean(isExpirable),
+      expireHours: isExpirable ? expireHours : null,
+    },
   });
 }
 

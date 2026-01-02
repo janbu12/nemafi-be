@@ -30,7 +30,7 @@ router.use('/tickets', ticketRouter);
 router.use('/covered-areas', coveredAreaRouter);
 router.use('/routers', routerRoutes);
 router.use('/orders', orderRoutes);
-router.use('/payments', paymentRoutes);
+router.use('/payment', paymentRoutes);
 
 router.use(techAdminRouter);
 router.use(technicianRouter);

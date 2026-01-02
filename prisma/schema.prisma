@@ -19,6 +19,7 @@ model User {
   orders    Order[]
   profile   Profile?
   assignedTickets  Ticket[]  @relation("AssignedTickets")
+  ticketHistory    TicketHistory[] @relation("TicketHistoryActor")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -74,6 +75,19 @@ enum TicketStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+enum TicketPaymentStatus {
+  PENDING_PAYMENT
+  PAID
+  EXPIRED
+}
+
+enum TicketHistoryActor {
+  SYSTEM
+  ADMIN
+  TECHNICIAN
+  CUSTOMER
 }
 
 model CategoryPackage {
@@ -148,26 +162,45 @@ model OrderItem {
 }
 
 model Ticket {
-  id           Int          @id @default(autoincrement())
-  order        Order        @relation(fields: [orderId], references: [id])
-  orderId      Int          @unique // Satu tiket untuk satu order
-  technician   User?        @relation("AssignedTickets", fields: [technicianId], references: [id])
-  technicianId Int?
-  status       TicketStatus @default(OPEN)
-  title        String
-  description  String?
-  category     TicketCategory? @relation(fields: [categoryId], references: [id])
-  categoryId   Int?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id            Int                  @id @default(autoincrement())
+  order         Order                @relation(fields: [orderId], references: [id])
+  orderId       Int                  @unique // Satu tiket untuk satu order
+  technician    User?                @relation("AssignedTickets", fields: [technicianId], references: [id])
+  technicianId  Int?
+  status        TicketStatus         @default(OPEN)
+  paymentStatus TicketPaymentStatus  @default(PENDING_PAYMENT)
+  expiresAt     DateTime?
+  expiredAt     DateTime?
+  paidAt        DateTime?
+  title         String
+  description   String?
+  category      TicketCategory?      @relation(fields: [categoryId], references: [id])
+  categoryId    Int?
+  history       TicketHistory[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 }
 
 model TicketCategory {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  tickets   Ticket[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  isExpirable Boolean   @default(false)
+  expireHours Int?
+  tickets     Ticket[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TicketHistory {
+  id          Int               @id @default(autoincrement())
+  ticket      Ticket            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId    Int
+  action      String
+  description String?
+  actorType   TicketHistoryActor @default(SYSTEM)
+  actor       User?             @relation("TicketHistoryActor", fields: [actorId], references: [id])
+  actorId     Int?
+  createdAt   DateTime          @default(now())
 }
 
 model CoveredArea {

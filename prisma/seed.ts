@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clean up existing data
+  await prisma.ticketHistory.deleteMany({});
   await prisma.ticket.deleteMany({});
   await prisma.ticketCategory.deleteMany({});
   await prisma.inventoryItem.deleteMany({});
@@ -28,10 +29,11 @@ async function main() {
   // Seed Ticket Categories
   await prisma.ticketCategory.createMany({
     data: [
+      { name: 'registrasi', isExpirable: true, expireHours: 24 },
+      { name: 'instalasi' },
       { name: 'customer' },
       { name: 'technician' },
       { name: 'termination' },
-      { name: 'installation' },
     ],
     skipDuplicates: true,
   });

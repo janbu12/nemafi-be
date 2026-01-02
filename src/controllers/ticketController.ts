@@ -7,7 +7,7 @@ import { success } from '../utils/responseHandler.js';
 // Admin
 async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const result = await ticketService.createTicket(req.body);
+    const result = await ticketService.createTicket(req.body, req.user);
     return success(res, result, 'Ticket created', 201);
   } catch (e) {
     next(e);
@@ -18,7 +18,7 @@ async function create(req: AuthRequest, res: Response, next: NextFunction) {
 async function assign(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const ticketId = Number(req.params.id);
-    const result = await ticketService.assignTicket(ticketId, req.body);
+    const result = await ticketService.assignTicket(ticketId, req.body, req.user);
     return success(res, result, 'Ticket assigned');
   } catch (e) {
     next(e);
@@ -54,6 +54,16 @@ async function getMy(req: AuthRequest, res: Response, next: NextFunction) {
     } catch (e) {
       next(e);
     }
+}
+
+async function getHistory(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.getHistory(ticketId);
+    return success(res, result, 'Ticket history');
+  } catch (e) {
+    next(e);
+  }
 }
 
 async function getCategories(req: AuthRequest, res: Response, next: NextFunction) {
@@ -94,4 +104,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, updateStatus, getAll, getMy, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, updateStatus, getAll, getMy, getHistory, getCategories, createCategory, updateCategory, deleteCategory };

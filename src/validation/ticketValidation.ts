@@ -18,4 +18,18 @@ export const updateTicketStatusValidation = z.object({
 
 export const ticketCategoryValidation = z.object({
   name: z.string().min(3).max(50),
+  isExpirable: z.boolean().optional(),
+  expireHours: z.number().int().positive().optional(),
+}).refine((data) => {
+  if (!data.isExpirable) return true;
+  return typeof data.expireHours === 'number' && data.expireHours > 0;
+}, {
+  message: 'expireHours is required when isExpirable is true',
+  path: ['expireHours'],
+}).refine((data) => {
+  if (!data.isExpirable || typeof data.expireHours !== 'number') return true;
+  return data.expireHours % 24 === 0;
+}, {
+  message: 'expireHours must be a multiple of 24',
+  path: ['expireHours'],
 });

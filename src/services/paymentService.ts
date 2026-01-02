@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { prismaClient } from '../application/prisma.js';
 import orderService from './orderService.js';
+import ticketService from './ticketService.js';
 
 // Simplified Midtrans integration (without SDK for flexibility)
 // You'll need to install midtrans-client: npm install midtrans-client
@@ -60,7 +61,9 @@ async function createPaymentToken(orderId: number, customerName: string, custome
         });
 
         if (!response.ok) {
-            throw new Error('Failed to create Midtrans token');
+            const errorBody = await response.text().catch(() => '');
+            console.error('Midtrans error response:', errorBody);
+            throw { status: 502, message: `Midtrans error: ${errorBody || 'Failed to create token'}` };
         }
 
         const result = await response.json() as any;
@@ -125,6 +128,7 @@ async function verifyPaymentNotification(notificationBody: any) {
         if (transaction_status === 'settlement' || transaction_status === 'capture') {
             // Payment success - move to next status
             await orderService.updateOrderStatus(orderId, 'SURVEY_SCHEDULED');
+            await ticketService.markTicketPaid(orderId);
             return { status: 'success', message: 'Payment verified', orderId };
         } else if (transaction_status === 'pending') {
             return { status: 'pending', message: 'Payment pending', orderId };

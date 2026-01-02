@@ -25,6 +25,7 @@ export async function createPaymentToken(req: Request, res: Response) {
 
         return responseHandler.success(res, result, 'Payment token created successfully');
     } catch (error: any) {
+        console.error('[payment/create-token] Error:', error);
         if (error.status && error.message) {
             return responseHandler.error(res, error.message, error.status);
         }

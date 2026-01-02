@@ -10,8 +10,14 @@ import { User } from '@prisma/client';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
 
 async function meProfile(req: AuthRequest) {
-    const user = req.user;
-    return user ? toUserDto(user) : null;
+    if (!req.user) return null;
+    const user = await prismaClient.user.findUnique({
+        where: { id: req.user.id },
+        include: { profile: true },
+    });
+    if (!user) return null;
+    const dto = toUserDto(user as any);
+    return { ...dto, profile: (user as any).profile ?? null };
 }
 
 async function updateProfile(user: User, data: any) {

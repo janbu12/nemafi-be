@@ -5,7 +5,20 @@ import { loginValidation, registerValidation } from "../validation/authValidatio
 import { toUserDto } from "../models/userModel.js";
 
 // Auth
-async function registerUser(input: { email: string, password: string, name?: string }) {
+async function registerUser(input: {
+    email: string;
+    password: string;
+    fullname: string;
+    phone_number: string;
+    full_address: string;
+    province: string;
+    city: string;
+    district: string;
+    subdistrict: string;
+    image_url?: string;
+    packageId: number;
+    ticketCategoryId?: number;
+}) {
     const data = registerValidation.parse(input);
 
     // 1. Validasi email dan paket
@@ -42,7 +55,7 @@ async function registerUser(input: { email: string, password: string, name?: str
         });
         
         // Buat Order baru
-        await prisma.order.create({
+        const order = await prisma.order.create({
             data: {
                 userId: newUser.id,
                 total: selectedPackage.price,
@@ -52,6 +65,38 @@ async function registerUser(input: { email: string, password: string, name?: str
                         packageId: selectedPackage.id
                     }
                 }
+            }
+        });
+
+        const category = data.ticketCategoryId
+            ? await prisma.ticketCategory.findUnique({ where: { id: data.ticketCategoryId } })
+            : await prisma.ticketCategory.findFirst({ where: { name: 'registrasi' } });
+
+        if (data.ticketCategoryId && !category) {
+            throw { status: 404, message: 'Ticket category not found' };
+        }
+
+        const expiresAt = category?.isExpirable && category.expireHours
+            ? new Date(Date.now() + category.expireHours * 60 * 60 * 1000)
+            : null;
+
+        const ticket = await prisma.ticket.create({
+            data: {
+                orderId: order.id,
+                title: `Pendaftaran paket ${selectedPackage.name}`,
+                description: 'Tiket dibuat otomatis saat pendaftaran.',
+                categoryId: category?.id,
+                expiresAt,
+            }
+        });
+
+        await prisma.ticketHistory.create({
+            data: {
+                ticketId: ticket.id,
+                action: 'Ticket created',
+                description: 'Tiket dibuat saat pendaftaran',
+                actorType: 'CUSTOMER',
+                actorId: newUser.id,
             }
         });
 

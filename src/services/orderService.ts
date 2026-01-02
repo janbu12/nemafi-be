@@ -200,7 +200,11 @@ async function getPendingReviewOrders() {
                     package: true
                 }
             },
-            user: true
+            user: {
+                include: {
+                    profile: true,
+                },
+            },
         },
         orderBy: { createdAt: 'asc' }
     });

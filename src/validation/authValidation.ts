@@ -18,6 +18,9 @@ const registerValidation = z.object({
 
     // Data untuk Order (wajib ada)
     packageId: z.number().int().positive(),
+
+    // Data untuk Ticket (opsional)
+    ticketCategoryId: z.number().int().positive().optional(),
 });
 
 const loginValidation = z.object({
