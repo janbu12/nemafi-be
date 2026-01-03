@@ -30,6 +30,7 @@ async function main() {
   await prisma.ticketCategory.createMany({
     data: [
       { name: 'registrasi', isExpirable: true, expireHours: 24 },
+      { name: 'survey' },
       { name: 'instalasi' },
       { name: 'customer' },
       { name: 'technician' },

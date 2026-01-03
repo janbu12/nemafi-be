@@ -66,6 +66,16 @@ async function getHistory(req: AuthRequest, res: Response, next: NextFunction) {
   }
 }
 
+async function completeSurvey(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.completeSurvey(ticketId, req.user);
+    return success(res, result, 'Survey completed');
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function getCategories(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const result = await ticketCategoryService.list();
@@ -104,4 +114,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, updateStatus, getAll, getMy, getHistory, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, updateStatus, getAll, getMy, getHistory, completeSurvey, getCategories, createCategory, updateCategory, deleteCategory };

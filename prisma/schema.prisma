@@ -11,40 +11,40 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  fullname  String   @default("User")
-  password  String
-  role      Role     @default(CUSTOMER)
-  orders    Order[]
-  profile   Profile?
-  assignedTickets  Ticket[]  @relation("AssignedTickets")
-  ticketHistory    TicketHistory[] @relation("TicketHistoryActor")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int             @id @default(autoincrement())
+  email           String          @unique
+  fullname        String          @default("User")
+  password        String
+  role            Role            @default(CUSTOMER)
+  orders          Order[]
+  profile         Profile?
+  assignedTickets Ticket[]        @relation("AssignedTickets")
+  ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 model Profile {
-  id            Int      @id @default(autoincrement())
-  user_id       Int      @unique
-  user          User     @relation(fields: [user_id], references: [id])
-  phone_number  String
-  image_url     String?
-  full_address  String
-  province      String
-  city          String
-  district      String
-  subdistrict   String
-  latitude      Float?
-  longitude     Float?
+  id           Int     @id @default(autoincrement())
+  user_id      Int     @unique
+  user         User    @relation(fields: [user_id], references: [id])
+  phone_number String
+  image_url    String?
+  full_address String
+  province     String
+  city         String
+  district     String
+  subdistrict  String
+  latitude     Float?
+  longitude    Float?
 
   // -- Kolom baru untuk integrasi MikroTik --
-  routerId      Int?      // Router mana yang akan digunakan user ini
-  router        Router?   @relation(fields: [routerId], references: [id])
-  pppUsername   String?   @unique // Username untuk PPP Secret
-  pppPassword   String?   // Password untuk PPP Secret
-  pppProfile    String?   // Profil/paket PPP (e.g., 'Paket-10Mbps')
-  isPppActive   Boolean   @default(true)
+  routerId    Int? // Router mana yang akan digunakan user ini
+  router      Router? @relation(fields: [routerId], references: [id])
+  pppUsername String? @unique // Username untuk PPP Secret
+  pppPassword String? // Password untuk PPP Secret
+  pppProfile  String? // Profil/paket PPP (e.g., 'Paket-10Mbps')
+  isPppActive Boolean @default(true)
 }
 
 model TokenBlacklist {
@@ -101,19 +101,19 @@ model CategoryPackage {
 }
 
 model Package {
-  id                Int             @id @default(autoincrement())
-  name              String
-  price             Float
-  downloadSpeed     Float           @default(0.0)
-  uploadSpeed       Float           @default(0.0)
-  isPopular         Boolean         @default(false)
-  description       String
-  metadata          Json?
-  category          CategoryPackage @relation(fields: [categoryId], references: [id])
-  categoryId        Int
-  orderItems        OrderItem[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id            Int             @id @default(autoincrement())
+  name          String
+  price         Float
+  downloadSpeed Float           @default(0.0)
+  uploadSpeed   Float           @default(0.0)
+  isPopular     Boolean         @default(false)
+  description   String
+  metadata      Json?
+  category      CategoryPackage @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+  orderItems    OrderItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 model InventoryCategory {
@@ -125,122 +125,122 @@ model InventoryCategory {
 }
 
 model InventoryItem {
-  id           Int               @id @default(autoincrement())
-  name         String
-  stock        Int               @default(0)
-  unit         String
-  category     InventoryCategory @relation(fields: [categoryId], references: [id])
-  categoryId   Int
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id         Int               @id @default(autoincrement())
+  name       String
+  stock      Int               @default(0)
+  unit       String
+  category   InventoryCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 }
 
 model Order {
-  id                    Int       @id @default(autoincrement())
-  user                  User      @relation(fields: [userId], references: [id])
+  id                    Int         @id @default(autoincrement())
+  user                  User        @relation(fields: [userId], references: [id])
   userId                Int
-  status                Status    @default(PENDING_REVIEW)
+  status                Status      @default(PENDING_REVIEW)
   total                 Float
   items                 OrderItem[]
-  ticket                Ticket?
+  tickets               Ticket[]
   // Payment fields for Midtrans
-  midtransTransactionId String?   @unique
-  midtransOrderId       String?   @unique
-  redirectUrl           String?   // Redirect URL dari Midtrans
+  midtransTransactionId String?     @unique
+  midtransOrderId       String?     @unique
+  redirectUrl           String? // Redirect URL dari Midtrans
   // Admin review fields
-  reviewedBy            Int?      // User ID dari admin yang review
-  reviewNotes           String?   // Catatan dari admin
+  reviewedBy            Int? // User ID dari admin yang review
+  reviewNotes           String? // Catatan dari admin
   reviewedAt            DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 }
 
 model OrderItem {
-  id        Int       @id @default(autoincrement())
-  order     Order     @relation(fields: [orderId], references: [id])
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
   orderId   Int
-  package   Package   @relation(fields: [packageId], references: [id])
+  package   Package @relation(fields: [packageId], references: [id])
   packageId Int
 }
 
 model Ticket {
-  id            Int                  @id @default(autoincrement())
-  order         Order                @relation(fields: [orderId], references: [id])
-  orderId       Int                  @unique // Satu tiket untuk satu order
-  technician    User?                @relation("AssignedTickets", fields: [technicianId], references: [id])
+  id            Int                 @id @default(autoincrement())
+  order         Order               @relation(fields: [orderId], references: [id])
+  orderId       Int
+  technician    User?               @relation("AssignedTickets", fields: [technicianId], references: [id])
   technicianId  Int?
-  status        TicketStatus         @default(OPEN)
-  paymentStatus TicketPaymentStatus  @default(PENDING_PAYMENT)
+  status        TicketStatus        @default(OPEN)
+  paymentStatus TicketPaymentStatus @default(PENDING_PAYMENT)
   expiresAt     DateTime?
   expiredAt     DateTime?
   paidAt        DateTime?
   title         String
   description   String?
-  category      TicketCategory?      @relation(fields: [categoryId], references: [id])
+  category      TicketCategory?     @relation(fields: [categoryId], references: [id])
   categoryId    Int?
   history       TicketHistory[]
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 }
 
 model TicketCategory {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  isExpirable Boolean   @default(false)
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isExpirable Boolean  @default(false)
   expireHours Int?
   tickets     Ticket[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model TicketHistory {
-  id          Int               @id @default(autoincrement())
-  ticket      Ticket            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  id          Int                @id @default(autoincrement())
+  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   ticketId    Int
   action      String
   description String?
   actorType   TicketHistoryActor @default(SYSTEM)
-  actor       User?             @relation("TicketHistoryActor", fields: [actorId], references: [id])
+  actor       User?              @relation("TicketHistoryActor", fields: [actorId], references: [id])
   actorId     Int?
-  createdAt   DateTime          @default(now())
+  createdAt   DateTime           @default(now())
 }
 
 model CoveredArea {
-  id        Int      @id @default(autoincrement())
-  province  String
-  city      String // City or Regency
-  district  String
-  village   String // Village or Sub-district
+  id          Int                       @id @default(autoincrement())
+  province    String
+  city        String // City or Regency
+  district    String
+  village     String // Village or Sub-district
   fullAddress String?
-  radius_m  Int?     @default(10000) // radius dalam meter (default 10 km)
-  center    Unsupported("geography")? // geography(Point, 4326)
-  createdAt DateTime @default(now())
+  radius_m    Int?                      @default(10000) // radius dalam meter (default 10 km)
+  center      Unsupported("geography")? // geography(Point, 4326)
+  createdAt   DateTime                  @default(now())
 
   @@unique([province, city, district, village], name: "unique_area_constraint")
 }
 
 model CoverageCheckHistory {
-  id           Int      @id @default(autoincrement())
+  id           Int                       @id @default(autoincrement())
   fullAddress  String
   province     String
   city         String
   district     String
   village      String
   userLocation Unsupported("geography")? // geography(Point, 4326)
-  isCovered    Boolean  // Mencatat hasil pengecekan
-  checkedAt    DateTime @default(now())
+  isCovered    Boolean // Mencatat hasil pengecekan
+  checkedAt    DateTime                  @default(now())
 }
 
 model Router {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
   host      String
   user      String
   password  String
-  port      Int?     @default(8728) // deprecated
-  portApi   Int      @default(8728)
-  portSsh   Int      @default(22)
+  port      Int?      @default(8728) // deprecated
+  portApi   Int       @default(8728)
+  portSsh   Int       @default(22)
   profiles  Profile[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

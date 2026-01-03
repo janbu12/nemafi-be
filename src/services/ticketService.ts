@@ -98,9 +98,16 @@ async function assignTicket(ticketId: number, data: any, actor?: User) {
   const ticket = await prismaClient.ticket.update({
     where: { id: ticketId },
     data: { technicianId },
+    include: { category: true },
   });
 
   await addHistory(ticket.id, 'Technician assigned', `Technician: ${technician.fullname}`, actor);
+  if (ticket.category?.name === 'instalasi') {
+    await prismaClient.order.update({
+      where: { id: ticket.orderId },
+      data: { status: 'TECHNICIAN_ASSIGNED' },
+    });
+  }
 
   return ticket;
 }
@@ -156,63 +163,116 @@ async function getHistory(ticketId: number) {
   });
 }
 
-async function markTicketPaid(orderId: number) {
-  const ticket = await prismaClient.ticket.findFirst({
-    where: { orderId },
+async function completeSurvey(ticketId: number, actor?: User) {
+  const ticket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
     include: { category: true },
   });
 
   if (!ticket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
+  if (ticket.category?.name !== 'survey') {
+    throw { status: 400, message: 'Ticket is not a survey ticket' };
+  }
+
+  const updatedSurvey = await prismaClient.ticket.update({
+    where: { id: ticket.id },
+    data: { status: 'CLOSED' },
+  });
+  await addHistory(updatedSurvey.id, 'Survey completed', 'Survey instalasi telah selesai', actor);
+
+  const installationCategory = await prismaClient.ticketCategory.findFirst({
+    where: { name: 'instalasi' },
+  });
+
+  const installationTicket = await prismaClient.ticket.create({
+    data: {
+      orderId: ticket.orderId,
+      title: 'Tiket instalasi',
+      description: 'Tiket instalasi dibuat setelah survey selesai.',
+      categoryId: installationCategory?.id,
+      paymentStatus: 'PAID',
+      paidAt: ticket.paidAt ?? new Date(),
+    },
+  });
+
+  await prismaClient.order.update({
+    where: { id: ticket.orderId },
+    data: { status: 'WAITING_FOR_ASSIGNMENT' },
+  });
+
+  await addHistory(installationTicket.id, 'Ticket created', 'Tiket instalasi dibuat setelah survey', actor);
+  await addHistory(updatedSurvey.id, 'Installation ticket created', `Tiket instalasi #${installationTicket.id} dibuat`, actor);
+
+  return installationTicket;
+}
+
+async function markTicketPaid(orderId: number) {
+  const registrationTicket = await prismaClient.ticket.findFirst({
+    where: { orderId, category: { name: 'registrasi' } },
+    include: { category: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const surveyCategory = await prismaClient.ticketCategory.findFirst({
+    where: { name: 'survey' },
+  });
+
+  const existingSurvey = await prismaClient.ticket.findFirst({
+    where: { orderId, category: { name: 'survey' } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!registrationTicket) {
+    if (existingSurvey) return existingSurvey;
+
     const created = await prismaClient.ticket.create({
       data: {
         orderId,
-        title: 'Ticket created after payment',
+        title: 'Tiket survey instalasi',
+        description: 'Tiket survey dibuat setelah pembayaran berhasil untuk kebutuhan instalasi.',
+        categoryId: surveyCategory?.id,
         paymentStatus: 'PAID',
         paidAt: new Date(),
       },
     });
 
-    await addHistory(created.id, 'Ticket created', 'Tiket dibuat setelah pembayaran', undefined);
+    await addHistory(created.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
     await addHistory(created.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
     return created;
   }
 
-  await ensureTicketExpiry(ticket);
+  await ensureTicketExpiry(registrationTicket);
 
   const updated = await prismaClient.ticket.update({
-    where: { id: ticket.id },
+    where: { id: registrationTicket.id },
     data: {
       paymentStatus: 'PAID',
       paidAt: new Date(),
-      ...(ticket.category?.name === 'registrasi' ? { status: 'CLOSED' } : {}),
+      ...(registrationTicket.category?.name === 'registrasi' ? { status: 'CLOSED' } : {}),
     },
   });
 
   await addHistory(updated.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
-  if (ticket.category?.name === 'registrasi') {
-    await addHistory(updated.id, 'Status changed to CLOSED', 'Tiket registrasi diselesaikan setelah pembayaran', undefined);
+  await addHistory(updated.id, 'Status changed to CLOSED', 'Tiket registrasi diselesaikan setelah pembayaran', undefined);
 
-    const installationCategory = await prismaClient.ticketCategory.findFirst({
-      where: { name: 'instalasi' },
-    });
+  if (existingSurvey) return existingSurvey;
 
-    const installationTicket = await prismaClient.ticket.create({
-      data: {
-        orderId,
-        title: 'Tiket instalasi',
-        description: 'Tiket instalasi dibuat setelah pembayaran berhasil.',
-        categoryId: installationCategory?.id,
-        paymentStatus: 'PAID',
-        paidAt: new Date(),
-      },
-    });
+  const surveyTicket = await prismaClient.ticket.create({
+    data: {
+      orderId,
+      title: 'Tiket survey instalasi',
+      description: 'Tiket survey dibuat setelah pembayaran berhasil untuk kebutuhan instalasi.',
+      categoryId: surveyCategory?.id,
+      paymentStatus: 'PAID',
+      paidAt: new Date(),
+    },
+  });
 
-    await addHistory(installationTicket.id, 'Ticket created', 'Tiket instalasi dibuat setelah pembayaran', undefined);
-    await addHistory(updated.id, 'Installation ticket created', `Tiket instalasi #${installationTicket.id} dibuat`, undefined);
-    return installationTicket;
-  }
-
-  return updated;
+  await addHistory(surveyTicket.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
+  await addHistory(updated.id, 'Survey ticket created', `Tiket survey #${surveyTicket.id} dibuat`, undefined);
+  return surveyTicket;
 }
 
 
@@ -223,5 +283,6 @@ export default {
   getAllTickets,
   getMyTickets,
   getHistory,
+  completeSurvey,
   markTicketPaid,
 };

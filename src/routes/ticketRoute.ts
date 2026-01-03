@@ -17,6 +17,7 @@ ticketRouter.patch('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketC
 ticketRouter.delete('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketController.deleteCategory);
 ticketRouter.get('/:id/history', roleMiddleware([Role.TECH_ADMIN]), ticketController.getHistory);
 ticketRouter.patch('/:id/assign', roleMiddleware([Role.TECH_ADMIN]), ticketController.assign);
+ticketRouter.post('/:id/complete-survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.completeSurvey);
 
 // Routes untuk Teknisi
 ticketRouter.get('/my-tickets', roleMiddleware([Role.TECHNICIAN]), ticketController.getMy);
