@@ -1,6 +1,14 @@
 import { prismaClient } from "../application/prisma.js";
 import { emitOrderPending, emitOrderReviewed } from "../application/socket.js";
-import { Order, Status } from "@prisma/client";
+import { Prisma, Status } from "@prisma/client";
+
+export type OrderWithDetails = Prisma.OrderGetPayload<{
+    include: {
+        items: { include: { package: true } };
+        user: true;
+        tickets: true;
+    };
+}>;
 
 // Get all orders for a user
 async function getUserOrders(userId: number) {
@@ -19,7 +27,7 @@ async function getUserOrders(userId: number) {
 }
 
 // Get single order by ID
-async function getOrderById(orderId: number, userId?: number) {
+async function getOrderById(orderId: number, userId?: number): Promise<OrderWithDetails> {
     const order = await prismaClient.order.findUnique({
         where: { id: orderId },
         include: {
@@ -29,7 +37,7 @@ async function getOrderById(orderId: number, userId?: number) {
                 }
             },
             user: true,
-            ticket: true
+            tickets: true
         }
     });
 

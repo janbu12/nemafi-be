@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prismaClient } from '../application/prisma.js';
-import orderService from './orderService.js';
+import orderService, { type OrderWithDetails } from './orderService.js';
 import ticketService from './ticketService.js';
 
 // Simplified Midtrans integration (without SDK for flexibility)
@@ -14,7 +14,7 @@ const MIDTRANS_BASE_URL = process.env.NODE_ENV === 'production'
 // Create Snap Token for payment (redirect to Midtrans)
 async function createPaymentToken(orderId: number, customerName: string, customerEmail: string, customerPhone: string) {
     try {
-        const order = await orderService.getOrderById(orderId);
+        const order: OrderWithDetails = await orderService.getOrderById(orderId);
 
         if (order.status !== 'REVIEW_APPROVED') {
             throw { status: 400, message: 'Order must be in REVIEW_APPROVED status to process payment' };
