@@ -1,4 +1,5 @@
 import { prismaClient } from "../application/prisma.js";
+import { emitOrderPending, emitOrderReviewed } from "../application/socket.js";
 import { Order, Status } from "@prisma/client";
 
 // Get all orders for a user
@@ -66,10 +67,16 @@ async function createOrder(userId: number, packageId: number) {
                 include: {
                     package: true
                 }
-            }
+            },
+            user: {
+                include: {
+                    profile: true,
+                },
+            },
         }
     });
 
+    emitOrderPending(order);
     return order;
 }
 
@@ -101,6 +108,7 @@ async function approveOrder(orderId: number, adminId: number, notes?: string) {
         }
     });
 
+    emitOrderReviewed(updatedOrder);
     return updatedOrder;
 }
 
@@ -132,6 +140,7 @@ async function rejectOrder(orderId: number, adminId: number, notes: string) {
         }
     });
 
+    emitOrderReviewed(updatedOrder);
     return updatedOrder;
 }
 

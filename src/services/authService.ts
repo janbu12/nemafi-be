@@ -31,6 +31,7 @@ async function registerUser(input: {
     const hashed = await bcrypt.hash(data.password, 10);
 
     // 2. Gunakan transaksi untuk membuat User, Profile, dan Order
+    let createdOrderId: number | null = null;
     const user = await prismaClient.$transaction(async (prisma) => {
         const newUser = await prisma.user.create({
             data: {
@@ -67,6 +68,7 @@ async function registerUser(input: {
                 }
             }
         });
+        createdOrderId = order.id;
 
         const category = data.ticketCategoryId
             ? await prisma.ticketCategory.findUnique({ where: { id: data.ticketCategoryId } })
@@ -102,6 +104,20 @@ async function registerUser(input: {
 
         return newUser;
     });
+
+    if (createdOrderId) {
+        const order = await prismaClient.order.findUnique({
+            where: { id: createdOrderId },
+            include: {
+                items: { include: { package: true } },
+                user: { include: { profile: true } },
+            },
+        });
+        if (order) {
+            const { emitOrderPending } = await import('../application/socket.js');
+            emitOrderPending(order);
+        }
+    }
 
     const token = utils.generateToken(user.id, user.email);
     return { user: toUserDto(user), token };

@@ -3,11 +3,15 @@ import { Server } from 'http';
 import { Client as SSHClient } from 'ssh2';
 import { prismaClient } from './prisma.js';
 
+let ioInstance: IOServer | null = null;
+
 export function initSocket(server: Server) {
   const io = new IOServer(server, {
     cors: { origin: '*' },
     path: '/socket.io',
   });
+
+  ioInstance = io;
 
   const terminalNamespace = io.of('/terminal');
 
@@ -88,4 +92,14 @@ export function initSocket(server: Server) {
   });
 
   return io;
+}
+
+export function emitOrderPending(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('orders:pending', payload);
+}
+
+export function emitOrderReviewed(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('orders:reviewed', payload);
 }
