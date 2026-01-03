@@ -9,6 +9,8 @@ export const updateProfileValidation = z.object({
   city: z.string().min(3).optional(),
   district: z.string().min(3).optional(),
   subdistrict: z.string().min(3).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
 });
 
 export const updateEmailValidation = z.object({

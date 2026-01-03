@@ -11,4 +11,6 @@ export interface Profile {
   city: string;
   district: string;
   subdistrict: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }

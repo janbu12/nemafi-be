@@ -13,6 +13,15 @@ async function check(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+async function adminCheck(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await coveredAreaService.checkAvailabilityNoHistory(req.body);
+    return success(res, result, result.message);
+  } catch (e) {
+    next(e);
+  }
+}
+
 // --- Handler untuk Admin ---
 
 async function addArea(req: Request, res: Response, next: NextFunction) {
@@ -62,4 +71,4 @@ async function getHistory(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export default { check, addArea, getAllAreas, deleteArea, getHistory, updateArea };
+export default { check, adminCheck, addArea, getAllAreas, deleteArea, getHistory, updateArea };

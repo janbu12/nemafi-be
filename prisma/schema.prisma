@@ -35,6 +35,8 @@ model Profile {
   city          String
   district      String
   subdistrict   String
+  latitude      Float?
+  longitude     Float?
 
   // -- Kolom baru untuk integrasi MikroTik --
   routerId      Int?      // Router mana yang akan digunakan user ini

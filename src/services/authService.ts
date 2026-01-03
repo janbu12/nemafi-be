@@ -16,6 +16,8 @@ async function registerUser(input: {
     city: string;
     district: string;
     subdistrict: string;
+    latitude: number;
+    longitude: number;
     image_url?: string;
     packageId: number;
     ticketCategoryId?: number;
@@ -52,6 +54,8 @@ async function registerUser(input: {
                 city: data.city,
                 district: data.district,
                 subdistrict: data.subdistrict,
+                latitude: data.latitude,
+                longitude: data.longitude,
                 image_url: data.image_url,
             }
         });

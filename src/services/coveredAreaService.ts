@@ -85,6 +85,69 @@ async function checkAvailability(data: any) {
   }
 }
 
+async function checkAvailabilityNoHistory(data: any) {
+  const validatedData = checkCoveredAreaValidation.parse(data);
+  const radiusToUse = DEFAULT_RADIUS_M;
+
+  const [area] = await prismaClient.$queryRaw<
+    Array<{
+      id: number;
+      province: string;
+      city: string;
+      district: string;
+      village: string;
+      radius_m: number | null;
+      distance_m: number;
+    }>
+  >`
+    SELECT
+      ca.id,
+      ca.province,
+      ca.city,
+      ca.district,
+      ca.village,
+      ca.radius_m,
+      ST_Distance(
+        ca.center,
+        ST_SetSRID(ST_MakePoint(${validatedData.longitude}, ${validatedData.latitude}), 4326)
+      ) AS distance_m
+    FROM "CoveredArea" ca
+    WHERE ca.center IS NOT NULL
+      AND ST_DWithin(
+        ca.center,
+        ST_SetSRID(ST_MakePoint(${validatedData.longitude}, ${validatedData.latitude}), 4326),
+        COALESCE(ca.radius_m, ${radiusToUse})
+      )
+    ORDER BY distance_m ASC
+    LIMIT 1;
+  `;
+
+  const isCovered = !!area;
+  let distanceKm = area ? area.distance_m / 1000 : undefined;
+
+  if (!isCovered) {
+    const [nearest] = await prismaClient.$queryRaw<
+      Array<{ distance_m: number; }>
+    >`
+      SELECT
+        ST_Distance(
+          ca.center,
+          ST_SetSRID(ST_MakePoint(${validatedData.longitude}, ${validatedData.latitude}), 4326)
+        ) AS distance_m
+      FROM "CoveredArea" ca
+      WHERE ca.center IS NOT NULL
+      ORDER BY distance_m ASC
+      LIMIT 1;
+    `;
+    distanceKm = nearest ? nearest.distance_m / 1000 : undefined;
+  }
+
+  if (isCovered) {
+    return { isAvailable: true, message: 'Bagus! Area pelanggan tercakup.', distanceKm };
+  }
+  return { isAvailable: false, message: 'Area pelanggan belum tercakup.', distanceKm };
+}
+
 // --- Fitur untuk Admin ---
 
 async function addCoveredArea(data: any) {
@@ -250,6 +313,7 @@ async function getCheckHistory() {
 
 export default {
   checkAvailability,
+  checkAvailabilityNoHistory,
   addCoveredArea,
   updateCoveredArea,
   getAllCoveredAreas,

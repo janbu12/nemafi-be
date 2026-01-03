@@ -12,4 +12,5 @@ coveredAreaRouter.post('/', coveredAreaController.addArea);
 coveredAreaRouter.get('/', coveredAreaController.getAllAreas);
 coveredAreaRouter.delete('/:id', coveredAreaController.deleteArea);
 coveredAreaRouter.put('/:id', coveredAreaController.updateArea);
+coveredAreaRouter.post('/admin/check', coveredAreaController.adminCheck);
 coveredAreaRouter.get('/history', coveredAreaController.getHistory);
