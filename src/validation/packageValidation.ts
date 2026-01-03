@@ -1,8 +1,17 @@
 import { z } from 'zod';
 
+const coerceBoolean = (value: unknown) => {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+};
+
 const packageFeatureSchema = z.object({
   key: z.string().min(1),
-  value: z.string().min(1),
+  value: z.preprocess(coerceBoolean, z.union([z.string().min(1), z.boolean()])),
 });
 
 const metadataSchema = z

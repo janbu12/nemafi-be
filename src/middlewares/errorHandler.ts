@@ -4,10 +4,11 @@ import { ZodError } from 'zod';
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
     if (err instanceof ZodError) {
+        const firstIssue = err.issues[0];
         return res.status(400).json({
             data: null,
             status: 'error',
-            message: 'ValidationError',
+            message: firstIssue?.message || 'Validasi gagal',
             issues: err.issues,
         });
     }

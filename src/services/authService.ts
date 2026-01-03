@@ -8,6 +8,7 @@ import { toUserDto } from "../models/userModel.js";
 async function registerUser(input: {
     email: string;
     password: string;
+    confirm_password?: string;
     fullname: string;
     phone_number: string;
     full_address: string;
