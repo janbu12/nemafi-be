@@ -25,6 +25,16 @@ async function assign(req: AuthRequest, res: Response, next: NextFunction) {
   }
 }
 
+async function schedule(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.scheduleTicket(ticketId, req.body, req.user);
+    return success(res, result, 'Ticket scheduled');
+  } catch (e) {
+    next(e);
+  }
+}
+
 // Teknisi
 async function updateStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -144,4 +154,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };

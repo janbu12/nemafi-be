@@ -12,6 +12,11 @@ export const assignTicketValidation = z.object({
   technicianId: z.number().int().positive(),
 });
 
+export const scheduleTicketValidation = z.object({
+  technicianId: z.number().int().positive(),
+  scheduledAt: z.string().datetime(),
+});
+
 export const updateTicketStatusValidation = z.object({
   status: z.nativeEnum(TicketStatus),
 });
@@ -20,6 +25,7 @@ export const ticketCategoryValidation = z.object({
   name: z.string().min(3).max(50),
   isExpirable: z.boolean().optional(),
   expireHours: z.number().int().positive().optional(),
+  requiresTechnician: z.boolean().optional(),
 }).refine((data) => {
   if (!data.isExpirable) return true;
   return typeof data.expireHours === 'number' && data.expireHours > 0;

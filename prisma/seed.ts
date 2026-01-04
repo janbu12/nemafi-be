@@ -29,12 +29,12 @@ async function main() {
   // Seed Ticket Categories
   await prisma.ticketCategory.createMany({
     data: [
-      { name: 'registrasi', isExpirable: true, expireHours: 24 },
-      { name: 'survey' },
-      { name: 'instalasi' },
-      { name: 'customer' },
-      { name: 'technician' },
-      { name: 'termination' },
+      { name: 'registrasi', isExpirable: true, expireHours: 24, requiresTechnician: false },
+      { name: 'survey', requiresTechnician: false },
+      { name: 'instalasi', requiresTechnician: true },
+      { name: 'customer', requiresTechnician: false },
+      { name: 'technician', requiresTechnician: true },
+      { name: 'termination', requiresTechnician: false },
     ],
     skipDuplicates: true,
   });

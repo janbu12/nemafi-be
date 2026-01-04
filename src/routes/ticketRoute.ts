@@ -17,6 +17,7 @@ ticketRouter.patch('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketC
 ticketRouter.delete('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticketController.deleteCategory);
 ticketRouter.get('/:id/history', roleMiddleware([Role.TECH_ADMIN]), ticketController.getHistory);
 ticketRouter.patch('/:id/assign', roleMiddleware([Role.TECH_ADMIN]), ticketController.assign);
+ticketRouter.patch('/:id/schedule', roleMiddleware([Role.TECH_ADMIN]), ticketController.schedule);
 ticketRouter.post('/:id/complete-survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.completeSurvey);
 ticketRouter.get('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.getSurvey);
 ticketRouter.put('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.updateSurvey);

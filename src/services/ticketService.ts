@@ -1,5 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
-import { assignTicketValidation, completeSurveyValidation, createTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
 import { Prisma, Role, User } from '@prisma/client';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
@@ -33,7 +33,7 @@ async function addHistoryEntry(ticketId: number, action: string, description: st
   const actor = actorId
     ? await prismaClient.user.findUnique({ where: { id: actorId } })
     : undefined;
-  return addHistory(ticketId, action, description, actor);
+  return addHistory(ticketId, action, description, actor ?? undefined);
 }
 
 function getExpiryFromCategory(category?: { isExpirable: boolean; expireHours: number | null }) {
@@ -120,6 +120,59 @@ async function assignTicket(ticketId: number, data: any, actor?: User) {
       where: { id: ticket.orderId },
       data: { status: 'TECHNICIAN_ASSIGNED' },
     });
+  }
+
+  return ticket;
+}
+
+async function scheduleTicket(ticketId: number, data: any, actor?: User) {
+  const { technicianId, scheduledAt } = scheduleTicketValidation.parse(data);
+
+  const existingTicket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+  });
+  if (!existingTicket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
+
+  const technician = await prismaClient.user.findFirst({
+    where: { id: technicianId, role: 'TECHNICIAN' },
+  });
+  if (!technician) throw { status: 404, message: 'Technician not found' };
+
+  const newSchedule = new Date(scheduledAt);
+  const prevSchedule = existingTicket.scheduledAt;
+
+  const ticket = await prismaClient.ticket.update({
+    where: { id: ticketId },
+    data: { technicianId, scheduledAt: newSchedule, status: 'IN_PROGRESS' },
+  });
+
+  await addHistory(ticket.id, 'Technician assigned', `Technician: ${technician.fullname}`, actor);
+  if (prevSchedule) {
+    await addHistory(
+      ticket.id,
+      'Schedule updated',
+      `Jadwal diubah dari ${prevSchedule.toISOString()} ke ${newSchedule.toISOString()}`,
+      actor
+    );
+  } else {
+    await addHistory(
+      ticket.id,
+      'Schedule updated',
+      `Dijadwalkan pada ${newSchedule.toISOString()}`,
+      actor
+    );
+  }
+
+  if (ticket.categoryId) {
+    const category = await prismaClient.ticketCategory.findUnique({ where: { id: ticket.categoryId } });
+    if (category?.name === 'instalasi') {
+      await prismaClient.order.update({
+        where: { id: ticket.orderId },
+        data: { status: 'TECHNICIAN_ASSIGNED' },
+      });
+    }
   }
 
   return ticket;
@@ -355,6 +408,11 @@ async function getSurveyByTicket(ticketId: number) {
         { installationTicketId: ticketId },
       ],
     },
+    include: {
+      installationTicket: {
+        include: { technician: true },
+      },
+    },
   });
 
   if (!survey) {
@@ -491,6 +549,7 @@ async function markTicketPaid(orderId: number) {
 export default {
   createTicket,
   assignTicket,
+  scheduleTicket,
   updateStatus,
   getAllTickets,
   getMyTickets,

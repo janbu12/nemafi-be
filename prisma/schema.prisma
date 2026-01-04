@@ -179,6 +179,7 @@ model Ticket {
   category      TicketCategory?     @relation(fields: [categoryId], references: [id])
   categoryId    Int?
   history       TicketHistory[]
+  scheduledAt   DateTime?
   surveyRecord  TicketSurvey?       @relation("SurveyTicket")
   installationSurvey TicketSurvey?  @relation("InstallationTicket")
   createdAt     DateTime            @default(now())
@@ -190,6 +191,7 @@ model TicketCategory {
   name        String   @unique
   isExpirable Boolean  @default(false)
   expireHours Int?
+  requiresTechnician Boolean @default(false)
   tickets     Ticket[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
