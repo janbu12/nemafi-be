@@ -145,10 +145,13 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
 
   const ticket = await prismaClient.ticket.update({
     where: { id: ticketId },
-    data: { technicianId, scheduledAt: newSchedule, status: 'IN_PROGRESS' },
+    data: { technicianId, scheduledAt: newSchedule, status: 'SCHEDULED' },
   });
 
   await addHistory(ticket.id, 'Technician assigned', `Technician: ${technician.fullname}`, actor);
+  if (existingTicket.status !== 'SCHEDULED') {
+    await addHistory(ticket.id, 'Status changed to SCHEDULED', 'Menunggu pengerjaan teknisi', actor);
+  }
   if (prevSchedule) {
     await addHistory(
       ticket.id,
@@ -214,7 +217,7 @@ async function getAllTickets() {
 async function getMyTickets(technician: User) {
     const tickets = await prismaClient.ticket.findMany({
         where: { technicianId: technician.id },
-        include: { order: { include: { user: true } }, category: true },
+        include: { order: { include: { user: { include: { profile: true } } } }, category: true, installationSurvey: true },
     });
 
     const updatedTickets = await Promise.all(tickets.map((ticket) => ensureTicketExpiry(ticket)));

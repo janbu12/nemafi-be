@@ -74,6 +74,7 @@ enum Status {
 
 enum TicketStatus {
   OPEN
+  SCHEDULED
   IN_PROGRESS
   RESOLVED
   CLOSED
