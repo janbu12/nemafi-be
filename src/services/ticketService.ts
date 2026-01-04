@@ -29,6 +29,13 @@ async function addHistory(
   });
 }
 
+async function addHistoryEntry(ticketId: number, action: string, description: string, actorId?: number) {
+  const actor = actorId
+    ? await prismaClient.user.findUnique({ where: { id: actorId } })
+    : undefined;
+  return addHistory(ticketId, action, description, actor);
+}
+
 function getExpiryFromCategory(category?: { isExpirable: boolean; expireHours: number | null }) {
   if (!category || !category.isExpirable || !category.expireHours) return null;
   const expiresAt = new Date();
@@ -492,5 +499,6 @@ export default {
   reportSurveyActual,
   getSurveyByTicket,
   updateSurvey,
+  addHistoryEntry,
   markTicketPaid,
 };

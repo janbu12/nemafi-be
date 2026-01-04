@@ -1,6 +1,7 @@
 import { prismaClient } from "../application/prisma.js";
 import { emitOrderPending, emitOrderReviewed } from "../application/socket.js";
 import { Prisma, Status } from "@prisma/client";
+import ticketService from "./ticketService.js";
 
 export type OrderWithDetails = Prisma.OrderGetPayload<{
     include: {
@@ -115,6 +116,13 @@ async function approveOrder(orderId: number, adminId: number, notes?: string) {
             user: true
         }
     });
+
+    const ticket = await prismaClient.ticket.findFirst({
+        where: { orderId, category: { name: 'registrasi' } },
+    });
+    if (ticket) {
+        await ticketService.addHistoryEntry(ticket.id, 'Order approved', 'Order disetujui admin', adminId);
+    }
 
     emitOrderReviewed(updatedOrder);
     return updatedOrder;
