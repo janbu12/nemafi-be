@@ -69,8 +69,38 @@ async function getHistory(req: AuthRequest, res: Response, next: NextFunction) {
 async function completeSurvey(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const ticketId = Number(req.params.id);
-    const result = await ticketService.completeSurvey(ticketId, req.user);
+    const result = await ticketService.completeSurvey(ticketId, req.body, req.user);
     return success(res, result, 'Survey completed');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function reportSurveyActual(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.reportSurveyActual(ticketId, req.user!, req.body);
+    return success(res, result, 'Survey actual usage updated');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function getSurvey(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.getSurveyByTicket(ticketId);
+    return success(res, result, 'Survey detail');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function updateSurvey(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.updateSurvey(ticketId, req.body, req.user);
+    return success(res, result, 'Survey updated');
   } catch (e) {
     next(e);
   }
@@ -114,4 +144,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, updateStatus, getAll, getMy, getHistory, completeSurvey, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };

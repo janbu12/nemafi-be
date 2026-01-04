@@ -179,6 +179,8 @@ model Ticket {
   category      TicketCategory?     @relation(fields: [categoryId], references: [id])
   categoryId    Int?
   history       TicketHistory[]
+  surveyRecord  TicketSurvey?       @relation("SurveyTicket")
+  installationSurvey TicketSurvey?  @relation("InstallationTicket")
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 }
@@ -203,6 +205,19 @@ model TicketHistory {
   actor       User?              @relation("TicketHistoryActor", fields: [actorId], references: [id])
   actorId     Int?
   createdAt   DateTime           @default(now())
+}
+
+model TicketSurvey {
+  id                   Int      @id @default(autoincrement())
+  surveyTicket         Ticket   @relation("SurveyTicket", fields: [surveyTicketId], references: [id])
+  surveyTicketId       Int      @unique
+  installationTicket   Ticket?  @relation("InstallationTicket", fields: [installationTicketId], references: [id])
+  installationTicketId Int?     @unique
+  plannedItems         Json
+  actualItems          Json?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model CoveredArea {

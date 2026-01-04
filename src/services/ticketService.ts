@@ -1,6 +1,6 @@
 import { prismaClient } from '../application/prisma.js';
-import { assignTicketValidation, createTicketValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
-import { Role, User } from '@prisma/client';
+import { assignTicketValidation, completeSurveyValidation, createTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { Prisma, Role, User } from '@prisma/client';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
 
@@ -11,8 +11,14 @@ function resolveActorType(user?: User): TicketHistoryActorType {
   return 'ADMIN';
 }
 
-async function addHistory(ticketId: number, action: string, description?: string, actor?: User) {
-  return prismaClient.ticketHistory.create({
+async function addHistory(
+  ticketId: number,
+  action: string,
+  description?: string,
+  actor?: User,
+  client: Prisma.TransactionClient | typeof prismaClient = prismaClient
+) {
+  return client.ticketHistory.create({
     data: {
       ticketId,
       action,
@@ -163,7 +169,12 @@ async function getHistory(ticketId: number) {
   });
 }
 
-async function completeSurvey(ticketId: number, actor?: User) {
+async function completeSurvey(ticketId: number, data: any, actor?: User) {
+  const validated = completeSurveyValidation.parse(data);
+  const surveyItems = validated.items;
+  const notes = validated.notes;
+  const technicianId = validated.technicianId;
+
   const ticket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
     include: { category: true },
@@ -176,36 +187,230 @@ async function completeSurvey(ticketId: number, actor?: User) {
     throw { status: 400, message: 'Ticket is not a survey ticket' };
   }
 
-  const updatedSurvey = await prismaClient.ticket.update({
-    where: { id: ticket.id },
-    data: { status: 'CLOSED' },
+  const inventoryIds = surveyItems.map((item) => item.inventoryItemId);
+  const inventoryItems = await prismaClient.inventoryItem.findMany({
+    where: { id: { in: inventoryIds } },
   });
-  await addHistory(updatedSurvey.id, 'Survey completed', 'Survey instalasi telah selesai', actor);
+
+  if (inventoryItems.length !== inventoryIds.length) {
+    throw { status: 400, message: 'Beberapa inventaris tidak ditemukan' };
+  }
+
+  const plannedItems = surveyItems.map((item) => {
+    const inventory = inventoryItems.find((inv) => inv.id === item.inventoryItemId);
+    return {
+      inventoryItemId: item.inventoryItemId,
+      name: inventory?.name,
+      unit: inventory?.unit,
+      quantity: item.quantity,
+    };
+  });
 
   const installationCategory = await prismaClient.ticketCategory.findFirst({
     where: { name: 'instalasi' },
   });
 
-  const installationTicket = await prismaClient.ticket.create({
+  const technician = technicianId
+    ? await prismaClient.user.findFirst({ where: { id: technicianId, role: 'TECHNICIAN' } })
+    : null;
+  if (technicianId && !technician) {
+    throw { status: 404, message: 'Technician not found' };
+  }
+
+  const installationTicket = await prismaClient.$transaction(async (tx) => {
+    const existingSurvey = await tx.ticketSurvey.findUnique({
+      where: { surveyTicketId: ticket.id },
+    });
+    if (existingSurvey) {
+      if (!existingSurvey.installationTicketId) {
+        throw { status: 409, message: 'Survey sudah disimpan sebelumnya' };
+      }
+      const existingInstallation = await tx.ticket.findUnique({
+        where: { id: existingSurvey.installationTicketId },
+      });
+      if (!existingInstallation) {
+        throw { status: 409, message: 'Survey sudah disimpan sebelumnya' };
+      }
+      return existingInstallation;
+    }
+
+    const updatedSurvey = await tx.ticket.update({
+      where: { id: ticket.id },
+      data: { status: 'CLOSED' },
+    });
+    await addHistory(updatedSurvey.id, 'Survey completed', 'Survey instalasi telah selesai', actor, tx);
+
+    const newInstallationTicket = await tx.ticket.create({
+      data: {
+        orderId: ticket.orderId,
+        title: 'Tiket instalasi',
+        description: 'Tiket instalasi dibuat setelah survey selesai.',
+        categoryId: installationCategory?.id,
+        paymentStatus: 'PAID',
+        paidAt: ticket.paidAt ?? new Date(),
+        technicianId: technician?.id,
+      },
+    });
+
+    await tx.ticketSurvey.create({
+      data: {
+        surveyTicketId: ticket.id,
+        installationTicketId: newInstallationTicket.id,
+        plannedItems,
+        notes,
+      },
+    });
+
+    await tx.order.update({
+      where: { id: ticket.orderId },
+      data: { status: technician ? 'TECHNICIAN_ASSIGNED' : 'WAITING_FOR_ASSIGNMENT' },
+    });
+
+    await addHistory(newInstallationTicket.id, 'Ticket created', 'Tiket instalasi dibuat setelah survey', actor, tx);
+    await addHistory(updatedSurvey.id, 'Installation ticket created', `Tiket instalasi #${newInstallationTicket.id} dibuat`, actor, tx);
+    if (technician) {
+      await addHistory(newInstallationTicket.id, 'Technician assigned', `Technician: ${technician.fullname}`, actor, tx);
+    }
+
+    return newInstallationTicket;
+  });
+
+  return installationTicket;
+}
+
+async function reportSurveyActual(ticketId: number, technician: User, data: any) {
+  const validated = surveyActualValidation.parse(data);
+
+  const ticket = await prismaClient.ticket.findFirst({
+    where: { id: ticketId, technicianId: technician.id },
+    include: { category: true },
+  });
+
+  if (!ticket) {
+    throw { status: 404, message: 'Ticket not found or you are not assigned to it' };
+  }
+  if (ticket.category?.name !== 'instalasi') {
+    throw { status: 400, message: 'Ticket is not an installation ticket' };
+  }
+
+  const inventoryIds = validated.items.map((item) => item.inventoryItemId);
+  const inventoryItems = await prismaClient.inventoryItem.findMany({
+    where: { id: { in: inventoryIds } },
+  });
+  if (inventoryItems.length !== inventoryIds.length) {
+    throw { status: 400, message: 'Beberapa inventaris tidak ditemukan' };
+  }
+
+  const actualItems = validated.items.map((item) => {
+    const inventory = inventoryItems.find((inv) => inv.id === item.inventoryItemId);
+    return {
+      inventoryItemId: item.inventoryItemId,
+      name: inventory?.name,
+      unit: inventory?.unit,
+      quantity: item.quantity,
+    };
+  });
+
+  const surveyRecord = await prismaClient.ticketSurvey.findFirst({
+    where: { installationTicketId: ticket.id },
+  });
+  if (!surveyRecord) {
+    throw { status: 404, message: 'Survey record not found for this ticket' };
+  }
+
+  const updated = await prismaClient.ticketSurvey.update({
+    where: { id: surveyRecord.id },
     data: {
-      orderId: ticket.orderId,
-      title: 'Tiket instalasi',
-      description: 'Tiket instalasi dibuat setelah survey selesai.',
-      categoryId: installationCategory?.id,
-      paymentStatus: 'PAID',
-      paidAt: ticket.paidAt ?? new Date(),
+      actualItems,
+      notes: validated.notes ?? surveyRecord.notes,
     },
   });
 
-  await prismaClient.order.update({
-    where: { id: ticket.orderId },
-    data: { status: 'WAITING_FOR_ASSIGNMENT' },
+  await addHistory(ticket.id, 'Installation usage reported', 'Penggunaan barang aktual telah dilaporkan', technician);
+
+  return updated;
+}
+
+async function getSurveyByTicket(ticketId: number) {
+  const ticket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+    include: { category: true },
   });
 
-  await addHistory(installationTicket.id, 'Ticket created', 'Tiket instalasi dibuat setelah survey', actor);
-  await addHistory(updatedSurvey.id, 'Installation ticket created', `Tiket instalasi #${installationTicket.id} dibuat`, actor);
+  if (!ticket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
 
-  return installationTicket;
+  const survey = await prismaClient.ticketSurvey.findFirst({
+    where: {
+      OR: [
+        { surveyTicketId: ticketId },
+        { installationTicketId: ticketId },
+      ],
+    },
+  });
+
+  if (!survey) {
+    return null;
+  }
+
+  return survey;
+}
+
+async function updateSurvey(ticketId: number, data: any, actor?: User) {
+  const validated = updateSurveyValidation.parse(data);
+
+  const ticket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+    include: { category: true },
+  });
+  if (!ticket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
+
+  const survey = await prismaClient.ticketSurvey.findFirst({
+    where: {
+      OR: [
+        { surveyTicketId: ticketId },
+        { installationTicketId: ticketId },
+      ],
+    },
+  });
+
+  if (!survey) {
+    throw { status: 404, message: 'Survey record not found' };
+  }
+
+  const inventoryIds = validated.items.map((item) => item.inventoryItemId);
+  const inventoryItems = await prismaClient.inventoryItem.findMany({
+    where: { id: { in: inventoryIds } },
+  });
+
+  if (inventoryItems.length !== inventoryIds.length) {
+    throw { status: 400, message: 'Beberapa inventaris tidak ditemukan' };
+  }
+
+  const plannedItems = validated.items.map((item) => {
+    const inventory = inventoryItems.find((inv) => inv.id === item.inventoryItemId);
+    return {
+      inventoryItemId: item.inventoryItemId,
+      name: inventory?.name,
+      unit: inventory?.unit,
+      quantity: item.quantity,
+    };
+  });
+
+  const updated = await prismaClient.ticketSurvey.update({
+    where: { id: survey.id },
+    data: {
+      plannedItems,
+      notes: validated.notes ?? survey.notes,
+    },
+  });
+
+  await addHistory(survey.surveyTicketId, 'Survey updated', 'Rencana kebutuhan survey diperbarui', actor);
+
+  return updated;
 }
 
 async function markTicketPaid(orderId: number) {
@@ -284,5 +489,8 @@ export default {
   getMyTickets,
   getHistory,
   completeSurvey,
+  reportSurveyActual,
+  getSurveyByTicket,
+  updateSurvey,
   markTicketPaid,
 };

@@ -18,7 +18,10 @@ ticketRouter.delete('/categories/:id', roleMiddleware([Role.TECH_ADMIN]), ticket
 ticketRouter.get('/:id/history', roleMiddleware([Role.TECH_ADMIN]), ticketController.getHistory);
 ticketRouter.patch('/:id/assign', roleMiddleware([Role.TECH_ADMIN]), ticketController.assign);
 ticketRouter.post('/:id/complete-survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.completeSurvey);
+ticketRouter.get('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.getSurvey);
+ticketRouter.put('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.updateSurvey);
 
 // Routes untuk Teknisi
 ticketRouter.get('/my-tickets', roleMiddleware([Role.TECHNICIAN]), ticketController.getMy);
 ticketRouter.patch('/:id/status', roleMiddleware([Role.TECHNICIAN]), ticketController.updateStatus);
+ticketRouter.patch('/:id/survey-actual', roleMiddleware([Role.TECHNICIAN]), ticketController.reportSurveyActual);

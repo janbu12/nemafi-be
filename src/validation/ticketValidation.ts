@@ -33,3 +33,24 @@ export const ticketCategoryValidation = z.object({
   message: 'expireHours must be a multiple of 24',
   path: ['expireHours'],
 });
+
+const surveyItemSchema = z.object({
+  inventoryItemId: z.number().int().positive(),
+  quantity: z.number().positive(),
+});
+
+export const completeSurveyValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+  technicianId: z.number().int().positive().optional(),
+});
+
+export const surveyActualValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+});
+
+export const updateSurveyValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+});
