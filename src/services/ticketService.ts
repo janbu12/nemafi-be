@@ -221,6 +221,12 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
     if (!ticket) {
       throw { status: 404, message: 'Ticket not found or you are not assigned to it' };
     }
+
+    if (ticket.scheduledAt && ['IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status)) {
+      if (new Date() < ticket.scheduledAt) {
+        throw { status: 400, message: 'Ticket cannot be started before scheduled time' };
+      }
+    }
   
     const updated = await prismaClient.ticket.update({
       where: { id: ticketId },
@@ -257,11 +263,23 @@ async function getMyTickets(technician: User) {
           installationSurvey: true,
           technician: true,
           members: { include: { technician: true } },
+          history: {
+            select: { action: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+          },
         },
     });
 
     const updatedTickets = await Promise.all(tickets.map((ticket) => ensureTicketExpiry(ticket)));
-    return updatedTickets as typeof tickets;
+    return updatedTickets.map((ticket: any) => {
+      const completedEntry = ticket.history?.find((entry: any) =>
+        entry.action === 'Status changed to RESOLVED' || entry.action === 'Status changed to CLOSED'
+      );
+      return {
+        ...ticket,
+        completedAt: completedEntry?.createdAt || (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? ticket.updatedAt : null),
+      };
+    });
 }
 
 async function getHistory(ticketId: number) {
