@@ -13,7 +13,7 @@ export const assignTicketValidation = z.object({
 });
 
 export const scheduleTicketValidation = z.object({
-  technicianId: z.number().int().positive(),
+  technicianId: z.number().int().positive().optional(),
   scheduledAt: z.string().datetime(),
 });
 
@@ -60,3 +60,12 @@ export const updateSurveyValidation = z.object({
   items: z.array(surveyItemSchema).min(1),
   notes: z.string().optional(),
 });
+
+export const updateTicketMembersValidation = z
+  .object({
+    addIds: z.array(z.number().int().positive()).optional(),
+    removeIds: z.array(z.number().int().positive()).optional(),
+  })
+  .refine((data) => (data.addIds && data.addIds.length > 0) || (data.removeIds && data.removeIds.length > 0), {
+    message: 'addIds or removeIds must be provided',
+  });

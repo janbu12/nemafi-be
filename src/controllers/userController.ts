@@ -12,6 +12,15 @@ async function listUsers(_req: Request, res: Response, next: Function) {
     }
 }
 
+async function listTechnicians(_req: AuthRequest, res: Response, next: Function) {
+    try {
+        const users = await userService.listTechnicians();
+        return success(res, users, 'List technicians');
+    } catch (e) {
+        next(e);
+    }
+}
+
 async function getUser(req: Request, res: Response, next: Function) {
     try {
         const id = Number(req.params.id);
@@ -54,6 +63,7 @@ async function deleteUser(req: Request, res: Response, next: Function) {
 
 export default {
     listUsers,
+    listTechnicians,
     getUser,
     createUser,
     updateUser,

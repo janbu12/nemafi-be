@@ -19,6 +19,7 @@ model User {
   orders          Order[]
   profile         Profile?
   assignedTickets Ticket[]        @relation("AssignedTickets")
+  memberTickets   TicketMember[]
   ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -170,6 +171,7 @@ model Ticket {
   orderId       Int
   technician    User?               @relation("AssignedTickets", fields: [technicianId], references: [id])
   technicianId  Int?
+  members       TicketMember[]
   status        TicketStatus        @default(OPEN)
   paymentStatus TicketPaymentStatus @default(PENDING_PAYMENT)
   expiresAt     DateTime?
@@ -208,6 +210,17 @@ model TicketHistory {
   actor       User?              @relation("TicketHistoryActor", fields: [actorId], references: [id])
   actorId     Int?
   createdAt   DateTime           @default(now())
+}
+
+model TicketMember {
+  id           Int      @id @default(autoincrement())
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId     Int
+  technician   User     @relation(fields: [technicianId], references: [id])
+  technicianId Int
+  createdAt    DateTime @default(now())
+
+  @@unique([ticketId, technicianId])
 }
 
 model TicketSurvey {

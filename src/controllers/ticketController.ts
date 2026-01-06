@@ -96,6 +96,16 @@ async function reportSurveyActual(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+async function updateMembers(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.updateTicketMembers(ticketId, req.user!, req.body);
+    return success(res, result, 'Ticket members updated');
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function getSurvey(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const ticketId = Number(req.params.id);
@@ -154,4 +164,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, updateMembers, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };

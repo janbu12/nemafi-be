@@ -10,6 +10,7 @@ userRouter.use(authMiddleware);
 
 // CRUD USER
 userRouter.get('/', roleMiddleware([Role.TECH_ADMIN]), userController.listUsers);
+userRouter.get('/technicians', roleMiddleware([Role.TECHNICIAN, Role.TECH_ADMIN]), userController.listTechnicians);
 userRouter.get('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.getUser);
 userRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), userController.createUser);
 userRouter.patch('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.updateUser);

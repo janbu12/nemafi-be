@@ -103,3 +103,13 @@ export function emitOrderReviewed(payload: any) {
   if (!ioInstance) return;
   ioInstance.emit('orders:reviewed', payload);
 }
+
+export function emitTicketMembersUpdated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('tickets:members-updated', payload);
+}
+
+export function emitTicketAssignmentUpdated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('tickets:assignment-updated', payload);
+}

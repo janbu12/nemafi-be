@@ -12,6 +12,14 @@ async function listUsers() {
     return users.map(toUserDto);
 }
 
+async function listTechnicians() {
+    const users = await prismaClient.user.findMany({
+        where: { role: 'TECHNICIAN' },
+        orderBy: { fullname: 'asc' },
+    });
+    return users.map(toUserDto);
+}
+
 async function getUser(id: number) {
     const user = await prismaClient.user.findUnique({ where: { id } });
     return user ? toUserDto(user) : null;
@@ -37,6 +45,7 @@ async function deleteUser(id: number) {
 
 export default {
     listUsers,
+    listTechnicians,
     getUser,
     createUser,
     updateUser,

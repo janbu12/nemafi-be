@@ -1,5 +1,6 @@
 import { prismaClient } from '../application/prisma.js';
-import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { emitTicketAssignmentUpdated, emitTicketMembersUpdated } from '../application/socket.js';
 import { Prisma, Role, User } from '@prisma/client';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
@@ -122,6 +123,12 @@ async function assignTicket(ticketId: number, data: any, actor?: User) {
     });
   }
 
+  emitTicketAssignmentUpdated({
+    ticketId: ticket.id,
+    leaderId: ticket.technicianId,
+    type: 'assigned',
+  });
+
   return ticket;
 }
 
@@ -135,20 +142,35 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
     throw { status: 404, message: 'Ticket not found' };
   }
 
-  const technician = await prismaClient.user.findFirst({
-    where: { id: technicianId, role: 'TECHNICIAN' },
-  });
-  if (!technician) throw { status: 404, message: 'Technician not found' };
+  let leaderId = existingTicket.technicianId ?? null;
+  if (technicianId) {
+    if (leaderId && leaderId !== technicianId) {
+      throw { status: 400, message: 'Leader already assigned for this ticket' };
+    }
+    const technician = await prismaClient.user.findFirst({
+      where: { id: technicianId, role: 'TECHNICIAN' },
+    });
+    if (!technician) throw { status: 404, message: 'Technician not found' };
+    leaderId = technicianId;
+  }
+  if (!leaderId) {
+    throw { status: 400, message: 'Leader must be assigned before scheduling' };
+  }
 
   const newSchedule = new Date(scheduledAt);
   const prevSchedule = existingTicket.scheduledAt;
 
   const ticket = await prismaClient.ticket.update({
     where: { id: ticketId },
-    data: { technicianId, scheduledAt: newSchedule, status: 'SCHEDULED' },
+    data: { technicianId: leaderId, scheduledAt: newSchedule, status: 'SCHEDULED' },
   });
 
-  await addHistory(ticket.id, 'Technician assigned', `Technician: ${technician.fullname}`, actor);
+  if (!existingTicket.technicianId) {
+    const leader = await prismaClient.user.findUnique({ where: { id: leaderId } });
+    if (leader) {
+      await addHistory(ticket.id, 'Technician assigned', `Technician: ${leader.fullname}`, actor);
+    }
+  }
   if (existingTicket.status !== 'SCHEDULED') {
     await addHistory(ticket.id, 'Status changed to SCHEDULED', 'Menunggu pengerjaan teknisi', actor);
   }
@@ -177,6 +199,13 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
       });
     }
   }
+
+  emitTicketAssignmentUpdated({
+    ticketId: ticket.id,
+    leaderId,
+    type: 'scheduled',
+    scheduledAt: ticket.scheduledAt,
+  });
 
   return ticket;
 }
@@ -216,8 +245,19 @@ async function getAllTickets() {
 // Untuk Teknisi: Melihat tiket yang ditugaskan kepadanya
 async function getMyTickets(technician: User) {
     const tickets = await prismaClient.ticket.findMany({
-        where: { technicianId: technician.id },
-        include: { order: { include: { user: { include: { profile: true } } } }, category: true, installationSurvey: true },
+        where: {
+          OR: [
+            { technicianId: technician.id },
+            { members: { some: { technicianId: technician.id } } },
+          ],
+        },
+        include: {
+          order: { include: { user: { include: { profile: true } } } },
+          category: true,
+          installationSurvey: true,
+          technician: true,
+          members: { include: { technician: true } },
+        },
     });
 
     const updatedTickets = await Promise.all(tickets.map((ticket) => ensureTicketExpiry(ticket)));
@@ -394,6 +434,79 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
   return updated;
 }
 
+async function updateTicketMembers(ticketId: number, actor: User, data: any) {
+  const validated = updateTicketMembersValidation.parse(data);
+
+  const ticket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+    include: { members: true },
+  });
+
+  if (!ticket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
+  if (ticket.technicianId !== actor.id) {
+    throw { status: 403, message: 'Only the leader can update members' };
+  }
+
+  const addIds = (validated.addIds || []).filter((id) => id !== actor.id);
+  const removeIds = (validated.removeIds || []).filter((id) => id !== actor.id);
+
+  const uniqueIds = Array.from(new Set([...addIds, ...removeIds]));
+  if (uniqueIds.length > 0) {
+    const technicians = await prismaClient.user.findMany({
+      where: { id: { in: uniqueIds }, role: 'TECHNICIAN' },
+    });
+    if (technicians.length !== uniqueIds.length) {
+      throw { status: 400, message: 'Invalid technician id in members' };
+    }
+  }
+
+  if (addIds.length > 0) {
+    await prismaClient.ticketMember.createMany({
+      data: addIds.map((technicianId) => ({ ticketId, technicianId })),
+      skipDuplicates: true,
+    });
+  }
+
+  if (removeIds.length > 0) {
+    await prismaClient.ticketMember.deleteMany({
+      where: {
+        ticketId,
+        technicianId: { in: removeIds },
+      },
+    });
+  }
+
+  const addedNames =
+    addIds.length > 0
+      ? (await prismaClient.user.findMany({ where: { id: { in: addIds } } })).map((user) => user.fullname)
+      : [];
+  const removedNames =
+    removeIds.length > 0
+      ? (await prismaClient.user.findMany({ where: { id: { in: removeIds } } })).map((user) => user.fullname)
+      : [];
+
+  if (addedNames.length > 0) {
+    await addHistory(ticketId, 'Members added', `Members: ${addedNames.join(', ')}`, actor);
+  }
+  if (removedNames.length > 0) {
+    await addHistory(ticketId, 'Members removed', `Members: ${removedNames.join(', ')}`, actor);
+  }
+
+  emitTicketMembersUpdated({
+    ticketId,
+    leaderId: ticket.technicianId,
+    addIds,
+    removeIds,
+  });
+
+  return prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+    include: { members: { include: { technician: true } } },
+  });
+}
+
 async function getSurveyByTicket(ticketId: number) {
   const ticket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
@@ -559,6 +672,7 @@ export default {
   getHistory,
   completeSurvey,
   reportSurveyActual,
+  updateTicketMembers,
   getSurveyByTicket,
   updateSurvey,
   addHistoryEntry,

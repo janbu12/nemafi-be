@@ -21,6 +21,8 @@ async function main() {
     data: [
       { email: 'admin@example.com', fullname: 'Admin', password: bcrypt.hashSync('password123', 10), role: "TECH_ADMIN"},
       { email: 'tech@example.com', fullname: 'Tech', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},
+      { email: 'tech2@example.com', fullname: 'Tech Member 1', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},
+      { email: 'tech3@example.com', fullname: 'Tech Member 2', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},
       { email: 'user@example.com', fullname: 'User', password: bcrypt.hashSync('password123', 10), role: "CUSTOMER"},
     ],
     skipDuplicates: true,
