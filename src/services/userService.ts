@@ -1,8 +1,8 @@
 import { prismaClient } from '../application/prisma.js';
 import bcrypt from 'bcryptjs';
-import { createUserValidation, updateUserValidation } from '../validation/userValidation.js';
+import { createUserValidation, resetPasswordValidation, updateUserValidation } from '../validation/userValidation.js';
 import { toUserDto } from '../models/userModel.js';
-import { AuthRequest } from '../middlewares/authMiddleware.js';
+import { Role, User } from '@prisma/client';
 
 
 
@@ -21,15 +21,25 @@ async function listTechnicians() {
 }
 
 async function getUser(id: number) {
-    const user = await prismaClient.user.findUnique({ where: { id } });
-    return user ? toUserDto(user) : null;
+    const user = await prismaClient.user.findUnique({
+        where: { id },
+        include: { profile: true },
+    });
+    if (!user) return null;
+    const dto = toUserDto(user as any);
+    return { ...dto, profile: (user as any).profile ?? null };
 }
 
-async function createUser(input: { email: string, name?: string, password: string }) {
+async function createUser(actor: User, input: { email: string, name?: string, password: string, role?: Role }) {
     const data = createUserValidation.parse(input);
+    const requestedRole = (data.role ?? 'CUSTOMER') as Role;
+    const restrictedRoles = [Role.TECH_ADMIN, Role.TECHNICIAN];
+    if (restrictedRoles.includes(requestedRole) && actor.role !== Role.SUPER_ADMIN) {
+        throw { status: 403, message: 'Only super admin can assign admin or technician role' };
+    }
     const hashed = await bcrypt.hash(data.password, 10);
     const user = await prismaClient.user.create({
-        data: { email: data.email, fullname: data.name, password: hashed }
+        data: { email: data.email, fullname: data.name, password: hashed, role: requestedRole }
     });
     return toUserDto(user);
 }
@@ -43,6 +53,18 @@ async function deleteUser(id: number) {
     return prismaClient.user.delete({ where: { id } });
 }
 
+async function resetPassword(id: number, actor: User, input: { password: string }) {
+    if (actor.role !== Role.SUPER_ADMIN) {
+        throw { status: 403, message: 'Only super admin can reset passwords' };
+    }
+    const data = resetPasswordValidation.parse(input);
+    const hashed = await bcrypt.hash(data.password, 10);
+    return prismaClient.user.update({
+        where: { id },
+        data: { password: hashed },
+    });
+}
+
 export default {
     listUsers,
     listTechnicians,
@@ -50,4 +72,5 @@ export default {
     createUser,
     updateUser,
     deleteUser,
+    resetPassword,
 };

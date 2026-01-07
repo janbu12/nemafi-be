@@ -32,9 +32,9 @@ async function getUser(req: Request, res: Response, next: Function) {
     }
 }
 
-async function createUser(req: Request, res: Response, next: Function) {
+async function createUser(req: AuthRequest, res: Response, next: Function) {
     try {
-        const created = await userService.createUser(req.body);
+        const created = await userService.createUser(req.user!, req.body);
         return success(res, created, 'User created', 201);
     } catch (e) {
         next(e);
@@ -61,6 +61,16 @@ async function deleteUser(req: Request, res: Response, next: Function) {
     }
 }
 
+async function resetPassword(req: AuthRequest, res: Response, next: Function) {
+    try {
+        const id = Number(req.params.id);
+        const result = await userService.resetPassword(id, req.user!, req.body);
+        return success(res, result, 'Password reset');
+    } catch (e) {
+        next(e);
+    }
+}
+
 export default {
     listUsers,
     listTechnicians,
@@ -68,4 +78,5 @@ export default {
     createUser,
     updateUser,
     deleteUser,
+    resetPassword,
 }

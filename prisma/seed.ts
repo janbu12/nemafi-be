@@ -19,6 +19,7 @@ async function main() {
   // Seed Users
   await prisma.user.createMany({
     data: [
+      { email: 'superadmin@example.com', fullname: 'Super Admin', password: bcrypt.hashSync('password123', 10), role: "SUPER_ADMIN"},
       { email: 'admin@example.com', fullname: 'Admin', password: bcrypt.hashSync('password123', 10), role: "TECH_ADMIN"},
       { email: 'tech@example.com', fullname: 'Tech', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},
       { email: 'tech2@example.com', fullname: 'Tech Member 1', password: bcrypt.hashSync('password123', 10), role: "TECHNICIAN"},

@@ -58,6 +58,7 @@ enum Role {
   CUSTOMER
   TECHNICIAN
   TECH_ADMIN
+  SUPER_ADMIN
 }
 
 enum Status {

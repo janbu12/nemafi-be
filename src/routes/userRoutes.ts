@@ -15,4 +15,5 @@ userRouter.get('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.getUser
 userRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), userController.createUser);
 userRouter.patch('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.updateUser);
 userRouter.delete('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.deleteUser);
+userRouter.patch('/:id/reset-password', roleMiddleware([Role.SUPER_ADMIN]), userController.resetPassword);
 
