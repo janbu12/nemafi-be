@@ -40,12 +40,34 @@ async function updateProfile(user: User, data: any) {
         });
     }
 
-    // Cukup UPDATE, karena profil pasti sudah ada
+    // Update or create profile if missing
     if (Object.keys(profileData).length > 0) {
-        await prisma.profile.update({
+        const existingProfile = await prisma.profile.findUnique({
         where: { user_id: user.id },
-        data: profileData,
         });
+
+        if (existingProfile) {
+        await prisma.profile.update({
+            where: { user_id: user.id },
+            data: profileData,
+        });
+        } else {
+        const requiredFields = ['phone_number', 'full_address'];
+        const missingFields = requiredFields.filter((field) => !profileData[field]);
+        if (missingFields.length > 0) {
+            throw { status: 400, message: `Lengkapi data: ${missingFields.join(', ')}` };
+        }
+        await prisma.profile.create({
+            data: {
+            user_id: user.id,
+            ...profileData,
+            province: profileData.province ?? 'N/A',
+            city: profileData.city ?? 'N/A',
+            district: profileData.district ?? 'N/A',
+            subdistrict: profileData.subdistrict ?? 'N/A',
+            },
+        });
+        }
     }
 
     return prisma.user.findUnique({
