@@ -23,11 +23,30 @@ async function listTechnicians() {
 async function getUser(id: number) {
     const user = await prismaClient.user.findUnique({
         where: { id },
-        include: { profile: true },
+        include: {
+            profile: { include: { router: true } },
+            billingInvoices: { orderBy: { dueAt: 'desc' } },
+            suspensionHistory: { orderBy: { suspendedAt: 'desc' } },
+            packageHistory: { include: { package: true }, orderBy: { startedAt: 'desc' } },
+            orders: {
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    items: { include: { package: true } },
+                    tickets: { include: { category: true }, orderBy: { createdAt: 'desc' } },
+                },
+            },
+        },
     });
     if (!user) return null;
     const dto = toUserDto(user as any);
-    return { ...dto, profile: (user as any).profile ?? null };
+    return {
+        ...dto,
+        profile: (user as any).profile ?? null,
+        billingInvoices: (user as any).billingInvoices ?? [],
+        suspensionHistory: (user as any).suspensionHistory ?? [],
+        packageHistory: (user as any).packageHistory ?? [],
+        orders: (user as any).orders ?? [],
+    };
 }
 
 async function createUser(actor: User, input: { email: string, name?: string, password: string, role?: Role }) {

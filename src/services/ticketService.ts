@@ -44,6 +44,57 @@ function getExpiryFromCategory(category?: { isExpirable: boolean; expireHours: n
   return expiresAt;
 }
 
+async function provisionPppProfileFromTicket(
+  ticketId: number,
+  client: Prisma.TransactionClient | typeof prismaClient = prismaClient
+) {
+  const ticket = await client.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      category: true,
+      order: {
+        include: {
+          items: { include: { package: true } },
+          user: { include: { profile: true } },
+        },
+      },
+    },
+  });
+
+  if (!ticket || ticket.category?.name !== 'instalasi') return;
+  const profile = ticket.order.user.profile;
+  if (!profile) return;
+  if (profile.pppUsername && profile.pppPassword && profile.pppProfile) {
+    await client.profile.update({
+      where: { id: profile.id },
+      data: { isPppActive: true },
+    });
+    return;
+  }
+
+  const pkg = ticket.order.items[0]?.package;
+  const pppUsername = profile.pppUsername || `ppp-${ticket.order.user.id}`;
+  const pppPassword = profile.pppPassword || `ppp-${ticket.order.user.id}-pass`;
+
+  await client.profile.update({
+    where: { id: profile.id },
+    data: {
+      pppUsername,
+      pppPassword,
+      pppProfile: profile.pppProfile || pkg?.name || 'Default',
+      isPppActive: true,
+    },
+  });
+
+  await addHistory(
+    ticket.id,
+    'PPPoE activated',
+    `PPPoE ${pppUsername} aktif dengan profil ${pkg?.name || 'Default'}`,
+    undefined,
+    client
+  );
+}
+
 async function ensureTicketExpiry(ticket: {
   id: number;
   paymentStatus: string;
@@ -216,6 +267,7 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
   
     const ticket = await prismaClient.ticket.findFirst({
       where: { id: ticketId, technicianId: technician.id },
+      include: { category: true },
     });
   
     if (!ticket) {
@@ -235,13 +287,17 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
 
     await addHistory(updated.id, `Status changed to ${status}`, undefined, technician);
 
+    if (['RESOLVED', 'CLOSED'].includes(status)) {
+      await provisionPppProfileFromTicket(updated.id);
+    }
+
     return updated;
 }
 
 // Untuk Admin: Melihat semua tiket
 async function getAllTickets() {
   const tickets = await prismaClient.ticket.findMany({
-    include: { order: { include: { user: true } }, technician: true, category: true },
+    include: { order: { include: { user: { include: { profile: true } } } }, technician: true, category: true },
   });
 
   const updatedTickets = await Promise.all(tickets.map((ticket) => ensureTicketExpiry(ticket)));
@@ -295,10 +351,14 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
   const surveyItems = validated.items;
   const notes = validated.notes;
   const technicianId = validated.technicianId;
+  const routerId = validated.routerId;
 
   const ticket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
-    include: { category: true },
+    include: {
+      category: true,
+      order: { include: { user: { include: { profile: true } }, items: { include: { package: true } } } },
+    },
   });
 
   if (!ticket) {
@@ -306,6 +366,16 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
   }
   if (ticket.category?.name !== 'survey') {
     throw { status: 400, message: 'Ticket is not a survey ticket' };
+  }
+  if (!routerId) {
+    throw { status: 400, message: 'Router wajib dipilih sebelum menyimpan survey' };
+  }
+  const router = await prismaClient.router.findUnique({ where: { id: routerId } });
+  if (!router) {
+    throw { status: 404, message: 'Router tidak ditemukan' };
+  }
+  if (!ticket.order?.user?.profile) {
+    throw { status: 400, message: 'Profil pelanggan belum lengkap' };
   }
 
   const inventoryIds = surveyItems.map((item) => item.inventoryItemId);
@@ -360,6 +430,16 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
       data: { status: 'CLOSED' },
     });
     await addHistory(updatedSurvey.id, 'Survey completed', 'Survey instalasi telah selesai', actor, tx);
+
+    const pppProfile = ticket.order.items[0]?.package?.name;
+    await tx.profile.update({
+      where: { id: ticket.order.user.profile.id },
+      data: {
+        routerId,
+        pppProfile: ticket.order.user.profile.pppProfile || pppProfile,
+      },
+    });
+    await addHistory(ticket.id, 'Router selected', `Router: ${router.name}`, actor, tx);
 
     const newInstallationTicket = await tx.ticket.create({
       data: {
@@ -528,7 +608,7 @@ async function updateTicketMembers(ticketId: number, actor: User, data: any) {
 async function getSurveyByTicket(ticketId: number) {
   const ticket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
-    include: { category: true },
+    include: { category: true, order: { include: { user: { include: { profile: true } } } } },
   });
 
   if (!ticket) {
@@ -553,15 +633,20 @@ async function getSurveyByTicket(ticketId: number) {
     return null;
   }
 
-  return survey;
+  const profile = ticket.order?.user?.profile;
+  return {
+    ...survey,
+    routerId: profile?.routerId ?? null,
+  };
 }
 
 async function updateSurvey(ticketId: number, data: any, actor?: User) {
   const validated = updateSurveyValidation.parse(data);
+  const routerId = validated.routerId;
 
   const ticket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
-    include: { category: true },
+    include: { category: true, order: { include: { user: { include: { profile: true } } } } },
   });
   if (!ticket) {
     throw { status: 404, message: 'Ticket not found' };
@@ -606,6 +691,21 @@ async function updateSurvey(ticketId: number, data: any, actor?: User) {
       notes: validated.notes ?? survey.notes,
     },
   });
+
+  if (routerId) {
+    const router = await prismaClient.router.findUnique({ where: { id: routerId } });
+    if (!router) {
+      throw { status: 404, message: 'Router tidak ditemukan' };
+    }
+    const profile = ticket.order?.user?.profile;
+    if (profile) {
+      await prismaClient.profile.update({
+        where: { id: profile.id },
+        data: { routerId },
+      });
+      await addHistory(survey.surveyTicketId, 'Router updated', `Router: ${router.name}`, actor);
+    }
+  }
 
   await addHistory(survey.surveyTicketId, 'Survey updated', 'Rencana kebutuhan survey diperbarui', actor);
 

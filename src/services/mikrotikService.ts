@@ -2,9 +2,23 @@ import { RouterOSClient } from 'routeros-client';
 import { prismaClient } from '../application/prisma.js';
 import { Profile, Router } from '@prisma/client';
 
-async function withRouterApi<T>(routerId: number, handler: (api: any) => Promise<T>): Promise<T> {
+const SIMULATION_HOST = 'SIMULATION';
+
+function isSimulation(router: Router) {
+  return process.env.MIKROTIK_SIMULATION === 'true' || router.host === SIMULATION_HOST;
+}
+
+async function getRouter(routerId: number) {
   const router = await prismaClient.router.findUnique({ where: { id: routerId } });
   if (!router) throw { status: 404, message: `Router with ID ${routerId} not found in database.` };
+  return router;
+}
+
+async function withRouterApi<T>(routerId: number, handler: (api: any) => Promise<T>): Promise<T> {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    throw { status: 400, message: 'Router is configured for simulation mode.' };
+  }
 
   const client = new RouterOSClient({
     host: router.host,
@@ -27,6 +41,14 @@ async function addPppSecret(profile: Profile & { router: Router }) {
     throw { status: 400, message: 'PPP information is incomplete for this user.' };
   }
 
+  if (isSimulation(profile.router)) {
+    await prismaClient.profile.update({
+      where: { id: profile.id },
+      data: { isPppActive: true },
+    });
+    return;
+  }
+
   return withRouterApi(profile.routerId, async (api) => {
     const payload: any = {
       name: profile.pppUsername,
@@ -42,6 +64,21 @@ async function addPppSecret(profile: Profile & { router: Router }) {
 
 // Mengubah paket/profil user PPP
 async function updatePppProfile(username: string, routerId: number, newProfile: string) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    const existing = await prismaClient.profile.findFirst({
+      where: { routerId, pppUsername: username },
+    });
+    if (!existing) {
+      throw { status: 404, message: `PPP user '${username}' not found on simulator.` };
+    }
+    await prismaClient.profile.update({
+      where: { id: existing.id },
+      data: { pppProfile: newProfile },
+    });
+    return;
+  }
+
   return withRouterApi(routerId, async (api) => {
     const secrets = await api.menu('/ppp/secret').getAll({ name: username });
     if (secrets.length === 0) {
@@ -53,6 +90,19 @@ async function updatePppProfile(username: string, routerId: number, newProfile: 
 
 // Menonaktifkan (suspend) user PPP
 async function disablePppSecret(username: string, routerId: number) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    const existing = await prismaClient.profile.findFirst({
+      where: { routerId, pppUsername: username },
+    });
+    if (!existing) throw { status: 404, message: `PPP user '${username}' not found on simulator.` };
+    await prismaClient.profile.update({
+      where: { id: existing.id },
+      data: { isPppActive: false },
+    });
+    return;
+  }
+
   return withRouterApi(routerId, async (api) => {
     const secrets = await api.menu('/ppp/secret').getAll({ name: username });
     if (secrets.length === 0) throw { status: 404, message: `PPP user '${username}' not found.` };
@@ -62,6 +112,19 @@ async function disablePppSecret(username: string, routerId: number) {
 
 // Mengaktifkan kembali user PPP
 async function enablePppSecret(username: string, routerId: number) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    const existing = await prismaClient.profile.findFirst({
+      where: { routerId, pppUsername: username },
+    });
+    if (!existing) throw { status: 404, message: `PPP user '${username}' not found on simulator.` };
+    await prismaClient.profile.update({
+      where: { id: existing.id },
+      data: { isPppActive: true },
+    });
+    return;
+  }
+
   return withRouterApi(routerId, async (api) => {
     const secrets = await api.menu('/ppp/secret').getAll({ name: username });
     if (secrets.length === 0) throw { status: 404, message: `PPP user '${username}' not found.` };
@@ -71,6 +134,25 @@ async function enablePppSecret(username: string, routerId: number) {
 
 // Tambah PPPoE/PPP Secret sederhana
 async function createPppSecret(routerId: number, data: { name: string; password: string; profile?: string }) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    const existing = await prismaClient.profile.findFirst({
+      where: { routerId, pppUsername: data.name },
+    });
+    if (!existing) {
+      throw { status: 404, message: `PPP user '${data.name}' not found on simulator.` };
+    }
+    await prismaClient.profile.update({
+      where: { id: existing.id },
+      data: {
+        pppPassword: data.password,
+        pppProfile: data.profile ?? existing.pppProfile,
+        isPppActive: true,
+      },
+    });
+    return { success: true };
+  }
+
   return withRouterApi(routerId, async (api) => {
     const payload: any = {
       name: data.name,
@@ -87,6 +169,18 @@ async function createPppSecret(routerId: number, data: { name: string; password:
 
 // Melihat user aktif di sebuah router
 async function getActiveUsers(routerId: number) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    const activeProfiles = await prismaClient.profile.findMany({
+      where: { routerId, isPppActive: true, pppUsername: { not: null } },
+    });
+    return activeProfiles.map((profile) => ({
+      name: profile.pppUsername,
+      service: 'pppoe',
+      profile: profile.pppProfile,
+    }));
+  }
+
   return withRouterApi(routerId, (api) => api.menu('/ppp/active').getAll());
 }
 
@@ -95,6 +189,10 @@ async function getActiveUsers(routerId: number) {
  */
 async function testConnection(routerId: number) {
   try {     
+   const router = await getRouter(routerId);
+   if (isSimulation(router)) {
+    return { success: true, message: 'Simulation connection successful.' };
+   }
    return await withRouterApi(routerId, async () => ({ success: true, message: 'Connection successful.' }));
   } catch (err: any) {
     throw { status: 500, message: `Failed to connect to router: ${err.message}` };

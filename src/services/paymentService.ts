@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { prismaClient } from '../application/prisma.js';
 import orderService, { type OrderWithDetails } from './orderService.js';
 import ticketService from './ticketService.js';
+import billingService from './billingService.js';
 
 // Simplified Midtrans integration (without SDK for flexibility)
 // You'll need to install midtrans-client: npm install midtrans-client
@@ -129,6 +130,7 @@ async function verifyPaymentNotification(notificationBody: any) {
             // Payment success - move to next status
             await orderService.updateOrderStatus(orderId, 'SURVEY_SCHEDULED');
             await ticketService.markTicketPaid(orderId);
+            await billingService.markLatestInvoicePaid(order.userId);
             return { status: 'success', message: 'Payment verified', orderId };
         } else if (transaction_status === 'pending') {
             return { status: 'pending', message: 'Payment pending', orderId };

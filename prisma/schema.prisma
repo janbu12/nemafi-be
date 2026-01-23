@@ -18,6 +18,9 @@ model User {
   role            Role            @default(CUSTOMER)
   orders          Order[]
   profile         Profile?
+  billingInvoices BillingInvoice[]
+  suspensionHistory SuspensionHistory[]
+  packageHistory  PackageHistory[]
   assignedTickets Ticket[]        @relation("AssignedTickets")
   memberTickets   TicketMember[]
   ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
@@ -95,6 +98,12 @@ enum TicketHistoryActor {
   CUSTOMER
 }
 
+enum BillingStatus {
+  PAID
+  UNPAID
+  OVERDUE
+}
+
 model CategoryPackage {
   id        Int       @id @default(autoincrement())
   name      String    @unique
@@ -115,6 +124,7 @@ model Package {
   category      CategoryPackage @relation(fields: [categoryId], references: [id])
   categoryId    Int
   orderItems    OrderItem[]
+  packageHistory PackageHistory[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
@@ -235,6 +245,42 @@ model TicketSurvey {
   notes                String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+}
+
+model BillingInvoice {
+  id          Int           @id @default(autoincrement())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      Int
+  amount      Float
+  periodStart DateTime
+  periodEnd   DateTime
+  status      BillingStatus @default(UNPAID)
+  dueAt       DateTime
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SuspensionHistory {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  reason      String
+  suspendedAt DateTime
+  resumedAt   DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model PackageHistory {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  package   Package  @relation(fields: [packageId], references: [id])
+  packageId Int
+  startedAt DateTime
+  endedAt   DateTime?
+  reason    String?
+  createdAt DateTime @default(now())
 }
 
 model CoveredArea {

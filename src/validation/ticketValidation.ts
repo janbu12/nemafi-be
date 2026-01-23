@@ -49,6 +49,7 @@ export const completeSurveyValidation = z.object({
   items: z.array(surveyItemSchema).min(1),
   notes: z.string().optional(),
   technicianId: z.number().int().positive().optional(),
+  routerId: z.number().int().positive().optional(),
 });
 
 export const surveyActualValidation = z.object({
@@ -59,6 +60,7 @@ export const surveyActualValidation = z.object({
 export const updateSurveyValidation = z.object({
   items: z.array(surveyItemSchema).min(1),
   notes: z.string().optional(),
+  routerId: z.number().int().positive().optional(),
 });
 
 export const updateTicketMembersValidation = z

@@ -13,11 +13,20 @@ async function meProfile(req: AuthRequest) {
     if (!req.user) return null;
     const user = await prismaClient.user.findUnique({
         where: { id: req.user.id },
-        include: { profile: true },
+        include: {
+            profile: true,
+            billingInvoices: { orderBy: { dueAt: 'desc' } },
+            packageHistory: { include: { package: true }, orderBy: { startedAt: 'desc' } },
+        },
     });
     if (!user) return null;
     const dto = toUserDto(user as any);
-    return { ...dto, profile: (user as any).profile ?? null };
+    return {
+        ...dto,
+        profile: (user as any).profile ?? null,
+        billingInvoices: (user as any).billingInvoices ?? [],
+        packageHistory: (user as any).packageHistory ?? [],
+    };
 }
 
 async function updateProfile(user: User, data: any) {
