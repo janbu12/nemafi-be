@@ -193,6 +193,7 @@ model Ticket {
   category      TicketCategory?     @relation(fields: [categoryId], references: [id])
   categoryId    Int?
   history       TicketHistory[]
+  attachments   TicketAttachment[]
   scheduledAt   DateTime?
   surveyRecord  TicketSurvey?       @relation("SurveyTicket")
   installationSurvey TicketSurvey?  @relation("InstallationTicket")
@@ -221,6 +222,16 @@ model TicketHistory {
   actor       User?              @relation("TicketHistoryActor", fields: [actorId], references: [id])
   actorId     Int?
   createdAt   DateTime           @default(now())
+}
+
+model TicketAttachment {
+  id        Int      @id @default(autoincrement())
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId  Int
+  filename  String
+  mimeType  String
+  dataUrl   String
+  createdAt DateTime @default(now())
 }
 
 model TicketMember {

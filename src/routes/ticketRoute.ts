@@ -27,3 +27,7 @@ ticketRouter.get('/my-tickets', roleMiddleware([Role.TECHNICIAN]), ticketControl
 ticketRouter.patch('/:id/status', roleMiddleware([Role.TECHNICIAN]), ticketController.updateStatus);
 ticketRouter.patch('/:id/survey-actual', roleMiddleware([Role.TECHNICIAN]), ticketController.reportSurveyActual);
 ticketRouter.patch('/:id/members', roleMiddleware([Role.TECHNICIAN]), ticketController.updateMembers);
+
+// Routes untuk Customer
+ticketRouter.post('/support', roleMiddleware([Role.CUSTOMER]), ticketController.createSupport);
+ticketRouter.get('/support', roleMiddleware([Role.CUSTOMER]), ticketController.getMySupport);

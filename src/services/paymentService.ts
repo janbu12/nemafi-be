@@ -118,7 +118,7 @@ async function verifyPaymentNotification(notificationBody: any) {
         }
 
         const order = await prismaClient.order.findUnique({
-            where: { id: orderId }
+            where: { id: orderId },
         });
 
         if (!order) {
@@ -131,6 +131,40 @@ async function verifyPaymentNotification(notificationBody: any) {
             await orderService.updateOrderStatus(orderId, 'SURVEY_SCHEDULED');
             await ticketService.markTicketPaid(orderId);
             await billingService.markLatestInvoicePaid(order.userId);
+            const orderWithItems = await prismaClient.order.findUnique({
+                where: { id: orderId },
+                include: { items: { include: { package: true } } },
+            });
+            if (orderWithItems && orderWithItems.items.length > 0) {
+                const paidPackage = orderWithItems.items[0].package;
+                const activeHistory = await prismaClient.packageHistory.findFirst({
+                    where: { userId: order.userId, endedAt: null },
+                    orderBy: { startedAt: 'desc' },
+                });
+                if (!activeHistory) {
+                    await prismaClient.packageHistory.create({
+                        data: {
+                            userId: order.userId,
+                            packageId: paidPackage.id,
+                            startedAt: new Date(),
+                            reason: 'Aktivasi paket setelah pembayaran',
+                        },
+                    });
+                } else if (activeHistory.packageId !== paidPackage.id) {
+                    await prismaClient.packageHistory.update({
+                        where: { id: activeHistory.id },
+                        data: { endedAt: new Date(), reason: 'Perubahan paket' },
+                    });
+                    await prismaClient.packageHistory.create({
+                        data: {
+                            userId: order.userId,
+                            packageId: paidPackage.id,
+                            startedAt: new Date(),
+                            reason: 'Aktivasi paket setelah pembayaran',
+                        },
+                    });
+                }
+            }
             return { status: 'success', message: 'Payment verified', orderId };
         } else if (transaction_status === 'pending') {
             return { status: 'pending', message: 'Payment pending', orderId };

@@ -63,6 +63,23 @@ export const updateSurveyValidation = z.object({
   routerId: z.number().int().positive().optional(),
 });
 
+const attachmentSchema = z
+  .object({
+    filename: z.string().min(1),
+    mimeType: z.string().min(1),
+    dataUrl: z.string().min(10).optional(),
+    url: z.string().url().optional(),
+  })
+  .refine((data) => data.dataUrl || data.url, {
+    message: 'Attachment must include dataUrl or url',
+  });
+
+export const supportTicketValidation = z.object({
+  subject: z.string().min(3).max(100),
+  description: z.string().min(10).max(2000),
+  attachments: z.array(attachmentSchema).max(5).optional(),
+});
+
 export const updateTicketMembersValidation = z
   .object({
     addIds: z.array(z.number().int().positive()).optional(),

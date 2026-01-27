@@ -1,6 +1,6 @@
 import { prismaClient } from '../application/prisma.js';
-import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
-import { emitTicketAssignmentUpdated, emitTicketMembersUpdated } from '../application/socket.js';
+import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, supportTicketValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { emitTicketAssignmentUpdated, emitTicketMembersUpdated, emitTicketUpdated } from '../application/socket.js';
 import { Prisma, Role, User } from '@prisma/client';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
@@ -147,6 +147,7 @@ async function createTicket(data: any, actor?: User) {
   });
 
   await addHistory(ticket.id, 'Ticket created', undefined, actor);
+  emitTicketUpdated({ ticketId: ticket.id, type: 'created' });
 
   return ticket;
 }
@@ -179,6 +180,7 @@ async function assignTicket(ticketId: number, data: any, actor?: User) {
     leaderId: ticket.technicianId,
     type: 'assigned',
   });
+  emitTicketUpdated({ ticketId: ticket.id, type: 'assigned' });
 
   return ticket;
 }
@@ -257,6 +259,7 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
     type: 'scheduled',
     scheduledAt: ticket.scheduledAt,
   });
+  emitTicketUpdated({ ticketId: ticket.id, type: 'scheduled' });
 
   return ticket;
 }
@@ -291,13 +294,19 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
       await provisionPppProfileFromTicket(updated.id);
     }
 
+    emitTicketUpdated({ ticketId: updated.id, type: 'status', status });
     return updated;
 }
 
 // Untuk Admin: Melihat semua tiket
 async function getAllTickets() {
   const tickets = await prismaClient.ticket.findMany({
-    include: { order: { include: { user: { include: { profile: true } } } }, technician: true, category: true },
+    include: {
+      order: { include: { user: { include: { profile: true } } } },
+      technician: true,
+      category: true,
+      attachments: true,
+    },
   });
 
   const updatedTickets = await Promise.all(tickets.map((ticket) => ensureTicketExpiry(ticket)));
@@ -336,6 +345,58 @@ async function getMyTickets(technician: User) {
         completedAt: completedEntry?.createdAt || (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? ticket.updatedAt : null),
       };
     });
+}
+
+async function createSupportTicket(user: User, data: any) {
+  const validated = supportTicketValidation.parse(data);
+  const order = await prismaClient.order.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!order) {
+    throw { status: 400, message: 'Anda belum memiliki order aktif.' };
+  }
+
+  const category = await prismaClient.ticketCategory.findFirst({
+    where: { name: 'customer' },
+  });
+
+  const ticket = await prismaClient.ticket.create({
+    data: {
+      orderId: order.id,
+      title: validated.subject,
+      description: validated.description,
+      categoryId: category?.id,
+      paymentStatus: 'PAID',
+    },
+  });
+
+  if (validated.attachments?.length) {
+    await prismaClient.ticketAttachment.createMany({
+      data: validated.attachments.map((file) => ({
+        ticketId: ticket.id,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        dataUrl: file.dataUrl || file.url || '',
+      })),
+    });
+  }
+
+  await addHistory(ticket.id, 'Ticket created', 'Tiket dukungan dibuat pelanggan', user);
+  emitTicketUpdated({ ticketId: ticket.id, type: 'support-created' });
+
+  return prismaClient.ticket.findUnique({
+    where: { id: ticket.id },
+    include: { attachments: true, category: true },
+  });
+}
+
+async function getMySupportTickets(user: User) {
+  return prismaClient.ticket.findMany({
+    where: { order: { userId: user.id }, category: { name: 'customer' } },
+    include: { attachments: true, category: true },
+    orderBy: { createdAt: 'desc' },
+  });
 }
 
 async function getHistory(ticketId: number) {
@@ -478,6 +539,8 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
     return newInstallationTicket;
   });
 
+  emitTicketUpdated({ ticketId: ticket.id, type: 'survey-completed' });
+  emitTicketUpdated({ ticketId: installationTicket.id, type: 'installation-created' });
   return installationTicket;
 }
 
@@ -530,6 +593,7 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
   });
 
   await addHistory(ticket.id, 'Installation usage reported', 'Penggunaan barang aktual telah dilaporkan', technician);
+  emitTicketUpdated({ ticketId: ticket.id, type: 'actual-reported' });
 
   return updated;
 }
@@ -600,6 +664,7 @@ async function updateTicketMembers(ticketId: number, actor: User, data: any) {
     addIds,
     removeIds,
   });
+  emitTicketUpdated({ ticketId, type: 'members-updated' });
 
   return prismaClient.ticket.findUnique({
     where: { id: ticketId },
@@ -710,6 +775,7 @@ async function updateSurvey(ticketId: number, data: any, actor?: User) {
   }
 
   await addHistory(survey.surveyTicketId, 'Survey updated', 'Rencana kebutuhan survey diperbarui', actor);
+  emitTicketUpdated({ ticketId: survey.surveyTicketId, type: 'survey-updated' });
 
   return updated;
 }
@@ -746,6 +812,7 @@ async function markTicketPaid(orderId: number) {
 
     await addHistory(created.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
     await addHistory(created.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
+    emitTicketUpdated({ ticketId: created.id, type: 'payment-completed' });
     return created;
   }
 
@@ -762,6 +829,7 @@ async function markTicketPaid(orderId: number) {
 
   await addHistory(updated.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
   await addHistory(updated.id, 'Status changed to CLOSED', 'Tiket registrasi diselesaikan setelah pembayaran', undefined);
+  emitTicketUpdated({ ticketId: updated.id, type: 'payment-completed' });
 
   if (existingSurvey) return existingSurvey;
 
@@ -778,6 +846,7 @@ async function markTicketPaid(orderId: number) {
 
   await addHistory(surveyTicket.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
   await addHistory(updated.id, 'Survey ticket created', `Tiket survey #${surveyTicket.id} dibuat`, undefined);
+  emitTicketUpdated({ ticketId: surveyTicket.id, type: 'survey-created' });
   return surveyTicket;
 }
 
@@ -795,6 +864,8 @@ export default {
   updateTicketMembers,
   getSurveyByTicket,
   updateSurvey,
+  createSupportTicket,
+  getMySupportTickets,
   addHistoryEntry,
   markTicketPaid,
 };

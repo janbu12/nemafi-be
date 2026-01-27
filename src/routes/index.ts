@@ -15,6 +15,7 @@ import { paymentRoutes } from './paymentRoutes.js';
 import { inventoryRoutes } from './inventoryRoutes.js';
 import { inventoryCategoryRoutes } from './inventoryCategoryRoutes.js';
 import { billingRoutes } from './billingRoutes.js';
+import { uploadRoutes } from './uploadRoutes.js';
 
 
 export const router = Router();
@@ -33,6 +34,7 @@ router.use('/routers', routerRoutes);
 router.use('/orders', orderRoutes);
 router.use('/payment', paymentRoutes);
 router.use(billingRoutes);
+router.use(uploadRoutes);
 
 router.use(techAdminRouter);
 router.use(technicianRouter);

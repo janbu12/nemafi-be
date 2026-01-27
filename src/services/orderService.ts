@@ -117,6 +117,30 @@ async function approveOrder(orderId: number, adminId: number, notes?: string) {
         }
     });
 
+    const now = new Date();
+    const existingInvoice = await prismaClient.billingInvoice.findFirst({
+        where: {
+            userId: updatedOrder.userId,
+            periodStart: { lte: now },
+            periodEnd: { gte: now },
+        },
+    });
+    if (!existingInvoice) {
+        const periodStart = now;
+        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const dueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        await prismaClient.billingInvoice.create({
+            data: {
+                userId: updatedOrder.userId,
+                amount: updatedOrder.total,
+                periodStart,
+                periodEnd,
+                dueAt,
+                status: 'UNPAID',
+            },
+        });
+    }
+
     const ticket = await prismaClient.ticket.findFirst({
         where: { orderId, category: { name: 'registrasi' } },
     });

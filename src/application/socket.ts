@@ -113,3 +113,8 @@ export function emitTicketAssignmentUpdated(payload: any) {
   if (!ioInstance) return;
   ioInstance.emit('tickets:assignment-updated', payload);
 }
+
+export function emitTicketUpdated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('tickets:updated', payload);
+}

@@ -126,6 +126,25 @@ async function updateSurvey(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
+// Customer
+async function createSupport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const result = await ticketService.createSupportTicket(req.user!, req.body);
+    return success(res, result, 'Support ticket created', 201);
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function getMySupport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const result = await ticketService.getMySupportTickets(req.user!);
+    return success(res, result, 'Support tickets');
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function getCategories(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const result = await ticketCategoryService.list();
@@ -164,4 +183,4 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, updateMembers, getSurvey, updateSurvey, getCategories, createCategory, updateCategory, deleteCategory };
+export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, updateMembers, getSurvey, updateSurvey, createSupport, getMySupport, getCategories, createCategory, updateCategory, deleteCategory };
