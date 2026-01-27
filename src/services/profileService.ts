@@ -66,16 +66,24 @@ async function updateProfile(user: User, data: any) {
         if (missingFields.length > 0) {
             throw { status: 400, message: `Lengkapi data: ${missingFields.join(', ')}` };
         }
-        await prisma.profile.create({
-            data: {
+        const createData = {
             user_id: user.id,
-            ...profileData,
+            phone_number: String(profileData.phone_number),
+            full_address: String(profileData.full_address),
+            image_url: profileData.image_url,
+            latitude: profileData.latitude,
+            longitude: profileData.longitude,
+            routerId: profileData.routerId,
+            pppUsername: profileData.pppUsername,
+            pppPassword: profileData.pppPassword,
+            pppProfile: profileData.pppProfile,
+            isPppActive: profileData.isPppActive,
             province: profileData.province ?? 'N/A',
             city: profileData.city ?? 'N/A',
             district: profileData.district ?? 'N/A',
             subdistrict: profileData.subdistrict ?? 'N/A',
-            },
-        });
+        };
+        await prisma.profile.create({ data: createData });
         }
     }
 

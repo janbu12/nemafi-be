@@ -374,7 +374,9 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
   if (!router) {
     throw { status: 404, message: 'Router tidak ditemukan' };
   }
-  if (!ticket.order?.user?.profile) {
+  const profileId = ticket.order?.user?.profile?.id;
+  const existingPppProfile = ticket.order?.user?.profile?.pppProfile ?? null;
+  if (!profileId) {
     throw { status: 400, message: 'Profil pelanggan belum lengkap' };
   }
 
@@ -433,10 +435,10 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
 
     const pppProfile = ticket.order.items[0]?.package?.name;
     await tx.profile.update({
-      where: { id: ticket.order.user.profile.id },
+      where: { id: profileId },
       data: {
         routerId,
-        pppProfile: ticket.order.user.profile.pppProfile || pppProfile,
+        pppProfile: existingPppProfile || pppProfile,
       },
     });
     await addHistory(ticket.id, 'Router selected', `Router: ${router.name}`, actor, tx);

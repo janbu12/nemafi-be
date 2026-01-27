@@ -52,7 +52,7 @@ async function getUser(id: number) {
 async function createUser(actor: User, input: { email: string, name?: string, password: string, role?: Role }) {
     const data = createUserValidation.parse(input);
     const requestedRole = (data.role ?? 'CUSTOMER') as Role;
-    const restrictedRoles = [Role.TECH_ADMIN, Role.TECHNICIAN];
+    const restrictedRoles: Role[] = [Role.TECH_ADMIN, Role.TECHNICIAN];
     if (restrictedRoles.includes(requestedRole) && actor.role !== Role.SUPER_ADMIN) {
         throw { status: 403, message: 'Only super admin can assign admin or technician role' };
     }
