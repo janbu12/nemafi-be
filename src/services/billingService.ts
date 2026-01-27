@@ -1,5 +1,17 @@
 import { prismaClient } from '../application/prisma.js';
 
+function resolvePackageForInvoice(
+  invoice: { periodStart: Date; periodEnd: Date },
+  packageHistory: Array<{ startedAt: Date; endedAt: Date | null; package: any }>
+) {
+  const matched = packageHistory.find((entry) => {
+    const start = entry.startedAt;
+    const end = entry.endedAt ?? new Date('2999-12-31');
+    return start <= invoice.periodEnd && end >= invoice.periodStart;
+  });
+  return matched?.package || packageHistory[0]?.package || null;
+}
+
 async function markLatestInvoicePaid(userId: number) {
   const invoice = await prismaClient.billingInvoice.findFirst({
     where: { userId, status: { in: ['UNPAID', 'OVERDUE'] } },
@@ -33,6 +45,44 @@ async function markLatestInvoicePaid(userId: number) {
   }
 
   return invoice;
+}
+
+async function listInvoices() {
+  const invoices = await prismaClient.billingInvoice.findMany({
+    orderBy: { dueAt: 'desc' },
+    include: {
+      user: {
+        include: {
+          profile: true,
+          packageHistory: { include: { package: true }, orderBy: { startedAt: 'desc' } },
+        },
+      },
+    },
+  });
+
+  return invoices.map((invoice) => ({
+    ...invoice,
+    package: resolvePackageForInvoice(invoice, invoice.user.packageHistory as any),
+  }));
+}
+
+async function getInvoiceById(id: number) {
+  const invoice = await prismaClient.billingInvoice.findUnique({
+    where: { id },
+    include: {
+      user: {
+        include: {
+          profile: true,
+          packageHistory: { include: { package: true }, orderBy: { startedAt: 'desc' } },
+        },
+      },
+    },
+  });
+  if (!invoice) return null;
+  return {
+    ...invoice,
+    package: resolvePackageForInvoice(invoice, invoice.user.packageHistory as any),
+  };
 }
 
 async function applyOverdueSuspension(graceDays = 3) {
@@ -83,5 +133,7 @@ async function applyOverdueSuspension(graceDays = 3) {
 
 export default {
   markLatestInvoicePaid,
+  listInvoices,
+  getInvoiceById,
   applyOverdueSuspension,
 };

@@ -19,6 +19,28 @@ async function payLatest(req: AuthRequest, res: Response, next: NextFunction) {
   }
 }
 
+async function listInvoices(_req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const invoices = await billingService.listInvoices();
+    return success(res, invoices, 'Billing invoices');
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function getInvoiceDetail(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const invoice = await billingService.getInvoiceById(id);
+    if (!invoice) return success(res, null, 'Invoice not found', 404);
+    return success(res, invoice, 'Billing invoice detail');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
   payLatest,
+  listInvoices,
+  getInvoiceDetail,
 };
