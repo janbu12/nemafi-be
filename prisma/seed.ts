@@ -597,6 +597,133 @@ async function main() {
       },
     });
   }
+
+  // --- Cron Simulation Users (relative to current time) ---
+  const realNow = new Date();
+  const daysFromNow = (days: number) => new Date(realNow.getTime() + days * 24 * 60 * 60 * 1000);
+
+  const cronPackage = packageByName('Home Premium');
+
+  // Auto renew test: last invoice PAID and period already ended
+  const renewUser = await prisma.user.create({
+    data: {
+      email: 'cron-renew@example.com',
+      fullname: 'Cron Renew Test',
+      password: bcrypt.hashSync('password123', 10),
+      role: 'CUSTOMER',
+    },
+  });
+
+  await prisma.profile.create({
+    data: {
+      user_id: renewUser.id,
+      phone_number: '081234567899',
+      full_address: 'Jl. Simulasi Cron Renew No. 1',
+      province: 'Jawa Barat',
+      city: 'Kota Bandung',
+      district: 'Coblong',
+      subdistrict: 'Dago',
+      latitude: -6.8894,
+      longitude: 107.6178,
+      routerId: router.id,
+      pppUsername: `ppp-${renewUser.id}`,
+      pppPassword: `ppp-${renewUser.id}-pass`,
+      pppProfile: cronPackage?.name || 'Home Premium',
+      isPppActive: true,
+    },
+  });
+
+  const renewOrder = await prisma.order.create({
+    data: {
+      userId: renewUser.id,
+      total: cronPackage.price,
+      status: 'COMPLETED',
+      reviewedBy: adminUser?.id ?? null,
+      reviewedAt: daysFromNow(-10),
+      items: { create: { packageId: cronPackage.id } },
+    },
+  });
+
+  await prisma.packageHistory.create({
+    data: {
+      userId: renewUser.id,
+      packageId: cronPackage.id,
+      startedAt: daysFromNow(-40),
+      reason: 'Langganan awal',
+    },
+  });
+
+  await prisma.billingInvoice.create({
+    data: {
+      userId: renewUser.id,
+      amount: cronPackage.price,
+      periodStart: daysFromNow(-35),
+      periodEnd: daysFromNow(-5),
+      dueAt: daysFromNow(-28),
+      status: 'PAID',
+      paidAt: daysFromNow(-27),
+    },
+  });
+
+  // Auto suspend test: unpaid invoice overdue beyond grace days
+  const suspendUser = await prisma.user.create({
+    data: {
+      email: 'cron-suspend@example.com',
+      fullname: 'Cron Suspend Test',
+      password: bcrypt.hashSync('password123', 10),
+      role: 'CUSTOMER',
+    },
+  });
+
+  await prisma.profile.create({
+    data: {
+      user_id: suspendUser.id,
+      phone_number: '081234567898',
+      full_address: 'Jl. Simulasi Cron Suspend No. 2',
+      province: 'Jawa Barat',
+      city: 'Kota Bandung',
+      district: 'Arcamanik',
+      subdistrict: 'Cisaranten Kulon',
+      latitude: -6.9141,
+      longitude: 107.6717,
+      routerId: router.id,
+      pppUsername: `ppp-${suspendUser.id}`,
+      pppPassword: `ppp-${suspendUser.id}-pass`,
+      pppProfile: cronPackage?.name || 'Home Premium',
+      isPppActive: true,
+    },
+  });
+
+  const suspendOrder = await prisma.order.create({
+    data: {
+      userId: suspendUser.id,
+      total: cronPackage.price,
+      status: 'COMPLETED',
+      reviewedBy: adminUser?.id ?? null,
+      reviewedAt: daysFromNow(-15),
+      items: { create: { packageId: cronPackage.id } },
+    },
+  });
+
+  await prisma.packageHistory.create({
+    data: {
+      userId: suspendUser.id,
+      packageId: cronPackage.id,
+      startedAt: daysFromNow(-50),
+      reason: 'Langganan awal',
+    },
+  });
+
+  await prisma.billingInvoice.create({
+    data: {
+      userId: suspendUser.id,
+      amount: cronPackage.price,
+      periodStart: daysFromNow(-20),
+      periodEnd: daysFromNow(10),
+      dueAt: daysFromNow(-12),
+      status: 'UNPAID',
+    },
+  });
 }
 
 main()

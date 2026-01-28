@@ -118,3 +118,8 @@ export function emitTicketUpdated(payload: any) {
   if (!ioInstance) return;
   ioInstance.emit('tickets:updated', payload);
 }
+
+export function emitBillingUpdated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('billing:updated', payload);
+}

@@ -1,4 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
+import { emitBillingUpdated } from '../application/socket.js';
 
 function resolvePackageForInvoice(
   invoice: { periodStart: Date; periodEnd: Date },
@@ -36,6 +37,7 @@ async function markLatestInvoicePaid(userId: number) {
     where: { id: invoice.id },
     data: { status: 'PAID', paidAt: new Date() },
   });
+  emitBillingUpdated({ userId, invoiceId: invoice.id, type: 'paid' });
 
   const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
   if (profile && !profile.isPppActive) {
@@ -170,6 +172,7 @@ async function applyOverdueSuspension(graceDays = 3) {
     where: { id: { in: overdueInvoices.map((invoice) => invoice.id) } },
     data: { status: 'OVERDUE' },
   });
+  emitBillingUpdated({ type: 'overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) });
 
   for (const userId of userIds) {
     const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
@@ -197,9 +200,61 @@ async function applyOverdueSuspension(graceDays = 3) {
   return { updated: overdueInvoices.length };
 }
 
+async function generateMonthlyInvoices() {
+  const now = new Date();
+  const activePackages = await prismaClient.packageHistory.findMany({
+    where: { endedAt: null },
+    include: { user: true, package: true },
+  });
+
+  let created = 0;
+
+  for (const active of activePackages) {
+    const lastInvoice = await prismaClient.billingInvoice.findFirst({
+      where: { userId: active.userId },
+      orderBy: { periodEnd: 'desc' },
+    });
+
+    if (lastInvoice) {
+      if (['UNPAID', 'OVERDUE'].includes(lastInvoice.status)) {
+        continue;
+      }
+      if (now < lastInvoice.periodEnd) {
+        continue;
+      }
+    }
+
+    const periodStart = lastInvoice ? new Date(lastInvoice.periodEnd) : now;
+
+    // 30 Hari periode tagihan
+    const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // 7 Hari jatuh tempo setelah periode tagihan berakhir
+    const dueAt = new Date(periodStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    await prismaClient.billingInvoice.create({
+      data: {
+        userId: active.userId,
+        amount: active.package?.price ?? 0,
+        periodStart,
+        periodEnd,
+        dueAt,
+        status: 'UNPAID',
+      },
+    });
+    created += 1;
+  }
+
+  if (created > 0) {
+    emitBillingUpdated({ type: 'renew', created });
+  }
+  return { created };
+}
+
 export default {
   markLatestInvoicePaid,
   listInvoices,
   getInvoiceById,
   applyOverdueSuspension,
+  generateMonthlyInvoices,
 };
