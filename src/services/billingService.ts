@@ -1,5 +1,6 @@
 import { prismaClient } from '../application/prisma.js';
 import { emitBillingUpdated } from '../application/socket.js';
+import mikrotikService from './mikrotikService.js';
 import cron from 'node-cron';
 
 type BillingSettingsInput = {
@@ -295,6 +296,117 @@ async function updateBillingSettings(input: BillingSettingsInput) {
   });
 }
 
+async function changeUserPackage(userId: number, packageId: number) {
+  const pkg = await prismaClient.package.findUnique({ where: { id: packageId } });
+  if (!pkg) throw { status: 404, message: 'Paket tidak ditemukan.' };
+
+  const latestInvoice = await prismaClient.billingInvoice.findFirst({
+    where: { userId },
+    orderBy: { periodEnd: 'desc' },
+  });
+
+  const activeHistory = await prismaClient.packageHistory.findFirst({
+    where: { userId, endedAt: null },
+    orderBy: { startedAt: 'desc' },
+  });
+
+  const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
+  const router = profile?.routerId
+    ? await prismaClient.router.findUnique({ where: { id: profile.routerId } })
+    : null;
+  const isSimulation =
+    process.env.MIKROTIK_SIMULATION === 'true' || (router?.host === 'SIMULATION');
+
+  if (!latestInvoice || latestInvoice.status !== 'PAID') {
+    if (latestInvoice) {
+      await prismaClient.billingInvoice.update({
+        where: { id: latestInvoice.id },
+        data: { amount: pkg.price },
+      });
+    }
+
+    const latestOrder = await prismaClient.order.findFirst({
+      where: { userId, status: { in: ['PENDING_REVIEW', 'REVIEW_APPROVED'] } },
+      orderBy: { createdAt: 'desc' },
+      include: { items: true },
+    });
+
+    if (latestOrder?.items?.[0]) {
+      await prismaClient.orderItem.update({
+        where: { id: latestOrder.items[0].id },
+        data: { packageId: pkg.id },
+      });
+      await prismaClient.order.update({
+        where: { id: latestOrder.id },
+        data: { total: pkg.price },
+      });
+    }
+
+    if (activeHistory) {
+      if (activeHistory.packageId !== pkg.id) {
+        await prismaClient.packageHistory.update({
+          where: { id: activeHistory.id },
+          data: { endedAt: new Date(), reason: 'Perubahan paket langsung (sebelum bayar)' },
+        });
+        await prismaClient.packageHistory.create({
+          data: {
+            userId,
+            packageId: pkg.id,
+            startedAt: new Date(),
+            reason: 'Perubahan paket langsung (sebelum bayar)',
+          },
+        });
+      }
+    }
+
+    if (profile?.isPppActive) {
+      await prismaClient.profile.update({
+        where: { id: profile.id },
+        data: { pppProfile: pkg.name },
+      });
+      if (profile.pppUsername && profile.routerId && !isSimulation) {
+        try {
+          await mikrotikService.updatePppProfile(profile.pppUsername, profile.routerId, pkg.name);
+        } catch {
+          // abaikan jika gagal koneksi mikrotik
+        }
+      }
+    }
+
+    return { mode: 'langsung', package: pkg };
+  }
+
+  const scheduledAt = latestInvoice.periodEnd;
+
+  if (activeHistory) {
+    if (activeHistory.packageId !== pkg.id) {
+      await prismaClient.packageHistory.update({
+        where: { id: activeHistory.id },
+        data: { endedAt: scheduledAt, reason: 'Perubahan paket periode berikutnya (setelah bayar)' },
+      });
+      await prismaClient.packageHistory.create({
+        data: {
+          userId,
+          packageId: pkg.id,
+          startedAt: scheduledAt,
+          reason: 'Perubahan paket periode berikutnya (setelah bayar)',
+        },
+      });
+    }
+  } else {
+    await prismaClient.packageHistory.create({
+      data: {
+        userId,
+        packageId: pkg.id,
+        startedAt: scheduledAt,
+        reason: 'Perubahan paket periode berikutnya (setelah bayar)',
+      },
+    });
+  }
+
+  return { mode: 'berikutnya', package: pkg, effectiveAt: scheduledAt };
+}
+
 export default {
   markLatestInvoicePaid,
   listInvoices,
@@ -303,4 +415,5 @@ export default {
   generateMonthlyInvoices,
   getBillingSettings,
   updateBillingSettings,
+  changeUserPackage,
 };

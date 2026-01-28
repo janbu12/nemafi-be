@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import userService from '../services/userService.js';
 import { success } from '../utils/responseHandler.js';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
+import billingService from '../services/billingService.js';
+import { changePackageValidation } from '../validation/profileValidation.js';
 
 async function listUsers(_req: Request, res: Response, next: Function) {
     try {
@@ -71,6 +73,17 @@ async function resetPassword(req: AuthRequest, res: Response, next: Function) {
     }
 }
 
+async function changePackage(req: AuthRequest, res: Response, next: Function) {
+    try {
+        const id = Number(req.params.id);
+        const { packageId } = changePackageValidation.parse(req.body);
+        const result = await billingService.changeUserPackage(id, packageId);
+        return success(res, result, 'Paket berhasil diubah');
+    } catch (e) {
+        next(e);
+    }
+}
+
 export default {
     listUsers,
     listTechnicians,
@@ -79,4 +92,5 @@ export default {
     updateUser,
     deleteUser,
     resetPassword,
+    changePackage,
 }

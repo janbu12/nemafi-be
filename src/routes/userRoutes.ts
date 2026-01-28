@@ -16,4 +16,5 @@ userRouter.post('/', roleMiddleware([Role.TECH_ADMIN]), userController.createUse
 userRouter.patch('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.updateUser);
 userRouter.delete('/:id', roleMiddleware([Role.TECH_ADMIN]), userController.deleteUser);
 userRouter.patch('/:id/reset-password', roleMiddleware([Role.SUPER_ADMIN]), userController.resetPassword);
+userRouter.patch('/:id/package', roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN]), userController.changePackage);
 

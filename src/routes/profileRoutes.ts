@@ -10,3 +10,4 @@ profileRouter.get('/', profileController.meProfile);
 profileRouter.patch('/', profileController.updateProfile);
 profileRouter.patch('/email', profileController.updateEmail);
 profileRouter.patch('/password', profileController.updatePassword);
+profileRouter.patch('/package', profileController.changePackage);

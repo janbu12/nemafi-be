@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
 import profileService from '../services/profileService.js';
+import billingService from '../services/billingService.js';
+import { changePackageValidation } from '../validation/profileValidation.js';
 import { success } from '../utils/responseHandler.js';
 
 async function meProfile(req: AuthRequest, res: Response, next: Function) {
@@ -39,9 +41,20 @@ async function updatePassword(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
+async function changePackage(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { packageId } = changePackageValidation.parse(req.body);
+    const result = await billingService.changeUserPackage(req.user!.id, packageId);
+    return success(res, result, 'Paket berhasil diubah');
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
     meProfile,
     updateProfile,
     updateEmail,
     updatePassword,
+    changePackage,
 };

@@ -21,3 +21,7 @@ export const updatePasswordValidation = z.object({
   oldPassword: z.string().min(6),
   newPassword: z.string().min(6),
 });
+
+export const changePackageValidation = z.object({
+  packageId: z.coerce.number().int().positive(),
+});
