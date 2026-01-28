@@ -3,14 +3,26 @@ import { prismaClient } from '../application/prisma.js';
 import orderService, { type OrderWithDetails } from './orderService.js';
 import ticketService from './ticketService.js';
 import billingService from './billingService.js';
+import appSettingService from './appSettingService.js';
 
 // Simplified Midtrans integration (without SDK for flexibility)
 // You'll need to install midtrans-client: npm install midtrans-client
 
-const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || '';
-const MIDTRANS_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://app.midtrans.com/snap/v1/transactions'
-    : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+async function getMidtransConfig() {
+    const settings = await appSettingService.getSettingValues([
+        'MIDTRANS_SERVER_KEY',
+    ]);
+    const serverKey = settings.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY || '';
+    const snapUrl =
+        process.env.MIDTRANS_SNAP_URL ||
+        (process.env.NODE_ENV === 'production'
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js');
+    const baseUrl = snapUrl.includes('sandbox')
+        ? 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+        : 'https://app.midtrans.com/snap/v1/transactions';
+    return { serverKey, baseUrl };
+}
 
 // Create Snap Token for payment (redirect to Midtrans)
 async function createPaymentToken(orderId: number, customerName: string, customerEmail: string, customerPhone: string) {
@@ -49,10 +61,14 @@ async function createPaymentToken(orderId: number, customerName: string, custome
         };
 
         // Create Basic Auth header
-        const auth = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString('base64');
+        const { serverKey, baseUrl } = await getMidtransConfig();
+        if (!serverKey) {
+            throw { status: 400, message: 'Konfigurasi Midtrans belum lengkap.' };
+        }
+        const auth = Buffer.from(`${serverKey}:`).toString('base64');
 
         // Call Midtrans Snap API
-        const response = await fetch(MIDTRANS_BASE_URL, {
+        const response = await fetch(baseUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Basic ${auth}`,
@@ -104,7 +120,11 @@ async function verifyPaymentNotification(notificationBody: any) {
 
         const status_code = 200
         // Verify signature
-        const dataToSign = `${order_id}${status_code}${gross_amount}${MIDTRANS_SERVER_KEY}`;
+        const { serverKey } = await getMidtransConfig();
+        if (!serverKey) {
+            throw { status: 400, message: 'Konfigurasi Midtrans belum lengkap.' };
+        }
+        const dataToSign = `${order_id}${status_code}${gross_amount}${serverKey}`;
         const calculatedSignature = crypto.createHash('sha512').update(dataToSign).digest('hex');
 
         if (calculatedSignature !== signature_key) {

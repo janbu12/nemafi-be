@@ -18,19 +18,23 @@ web.use(express.json());
 web.use('/api', router);
 
 if (process.env.ENABLE_BILLING_AUTOMATION === 'true') {
-  const suspendCron = process.env.BILLING_SUSPEND_CRON || '0 * * * *';
-  const renewCron = process.env.BILLING_RENEW_CRON || '10 0 1 * *';
+  (async () => {
+    const settings = await billingService.getBillingSettings();
+    if (!settings.automationEnabled) return;
 
-  cron.schedule(suspendCron, () => {
-    billingService.applyOverdueSuspension(3).catch(() => {
-      // ignore background errors
+    cron.schedule(settings.suspendCron, () => {
+      billingService.applyOverdueSuspension(settings.graceDays).catch(() => {
+        // ignore background errors
+      });
     });
-  });
 
-  cron.schedule(renewCron, () => {
-    billingService.generateMonthlyInvoices().catch(() => {
-      // ignore background errors
+    cron.schedule(settings.renewCron, () => {
+      billingService.generateMonthlyInvoices().catch(() => {
+        // ignore background errors
+      });
     });
+  })().catch(() => {
+    // ignore settings load errors
   });
 }
 

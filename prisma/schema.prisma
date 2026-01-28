@@ -272,6 +272,30 @@ model BillingInvoice {
   updatedAt   DateTime      @updatedAt
 }
 
+model BillingSetting {
+  id                Int      @id @default(1)
+  automationEnabled Boolean  @default(false)
+  suspendCron       String   @default("0 * * * *")
+  renewCron         String   @default("10 0 1 * *")
+  graceDays         Int      @default(3)
+  dueDays           Int      @default(7)
+  periodDays        Int      @default(30)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  group     String
+  type      String
+  isSecret  Boolean  @default(false)
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
 model SuspensionHistory {
   id          Int      @id @default(autoincrement())
   user        User     @relation(fields: [userId], references: [id])

@@ -10,6 +10,8 @@ async function main() {
   await prisma.ticketSurvey.deleteMany({});
   await prisma.ticket.deleteMany({});
   await prisma.billingInvoice.deleteMany({});
+  await prisma.billingSetting.deleteMany({});
+  await prisma.appSetting.deleteMany({});
   await prisma.suspensionHistory.deleteMany({});
   await prisma.packageHistory.deleteMany({});
   await prisma.orderItem.deleteMany({});
@@ -24,6 +26,32 @@ async function main() {
   await prisma.package.deleteMany({});
   await prisma.categoryPackage.deleteMany({});
   await prisma.user.deleteMany({});
+
+  await prisma.billingSetting.create({
+    data: {
+      automationEnabled: process.env.ENABLE_BILLING_AUTOMATION === 'true',
+      suspendCron: process.env.BILLING_SUSPEND_CRON || '0 * * * *',
+      renewCron: process.env.BILLING_RENEW_CRON || '10 0 1 * *',
+      graceDays: 3,
+      dueDays: 7,
+      periodDays: 30,
+    },
+  });
+
+  await prisma.appSetting.createMany({
+    data: [
+      { key: 'MIDTRANS_SERVER_KEY', value: process.env.MIDTRANS_SERVER_KEY || '', group: 'midtrans', type: 'secret', isSecret: true },
+      { key: 'GEMINI_API_KEY', value: process.env.GEMINI_API_KEY || '', group: 'gemini', type: 'secret', isSecret: true },
+      { key: 'GEMINI_MODEL', value: process.env.GEMINI_MODEL || 'gemini-2.5-flash', group: 'gemini', type: 'text', isSecret: false },
+      { key: 'MIKROTIK_SIMULATION', value: process.env.MIKROTIK_SIMULATION || 'true', group: 'mikrotik', type: 'boolean', isSecret: false },
+      { key: 'R2_ACCOUNT_ID', value: process.env.R2_ACCOUNT_ID || '', group: 'r2', type: 'text', isSecret: false },
+      { key: 'R2_ACCESS_KEY_ID', value: process.env.R2_ACCESS_KEY_ID || '', group: 'r2', type: 'secret', isSecret: true },
+      { key: 'R2_SECRET_ACCESS_KEY', value: process.env.R2_SECRET_ACCESS_KEY || '', group: 'r2', type: 'secret', isSecret: true },
+      { key: 'R2_BUCKET', value: process.env.R2_BUCKET || '', group: 'r2', type: 'text', isSecret: false },
+      { key: 'R2_PUBLIC_BASE_URL', value: process.env.R2_PUBLIC_BASE_URL || '', group: 'r2', type: 'text', isSecret: false },
+    ],
+    skipDuplicates: true,
+  });
 
   // Seed Users
   await prisma.user.createMany({

@@ -7,8 +7,8 @@ const envSchema = z.object({
     SOCKET_PORT: z.coerce.number().optional(),
     DATABASE_URL: z.string().url(),
     JWT_SECRET: z.string().min(16),
-    GEMINI_API_KEY: z.string().min(1),
-    GEMINI_MODEL: z.string().min(1),
+    GEMINI_API_KEY: z.string().optional().default(''),
+    GEMINI_MODEL: z.string().optional().default(''),
 });
 
 

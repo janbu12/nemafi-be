@@ -1,5 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
-import { geminiModel } from '../application/gemini.js';
+import { getGeminiModel } from '../application/gemini.js';
 import { packageRecommendationValidation } from '../validation/recommendationValidation.js';
 
 async function recommendPackage(data: any) {
@@ -50,6 +50,7 @@ async function recommendPackage(data: any) {
   `;
 
   // 3. Panggil API Gemini
+  const geminiModel = await getGeminiModel();
   const result = await geminiModel.generateContent(prompt);
   const responseText = result.response.text();
   

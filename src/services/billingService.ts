@@ -1,5 +1,15 @@
 import { prismaClient } from '../application/prisma.js';
 import { emitBillingUpdated } from '../application/socket.js';
+import cron from 'node-cron';
+
+type BillingSettingsInput = {
+  automationEnabled?: boolean;
+  suspendCron?: string;
+  renewCron?: string;
+  graceDays?: number;
+  dueDays?: number;
+  periodDays?: number;
+};
 
 function resolvePackageForInvoice(
   invoice: { periodStart: Date; periodEnd: Date },
@@ -202,6 +212,7 @@ async function applyOverdueSuspension(graceDays = 3) {
 
 async function generateMonthlyInvoices() {
   const now = new Date();
+  const settings = await getBillingSettings();
   const activePackages = await prismaClient.packageHistory.findMany({
     where: { endedAt: null },
     include: { user: true, package: true },
@@ -225,12 +236,8 @@ async function generateMonthlyInvoices() {
     }
 
     const periodStart = lastInvoice ? new Date(lastInvoice.periodEnd) : now;
-
-    // 30 Hari periode tagihan
-    const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-    // 7 Hari jatuh tempo setelah periode tagihan berakhir
-    const dueAt = new Date(periodStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const periodEnd = new Date(periodStart.getTime() + settings.periodDays * 24 * 60 * 60 * 1000);
+    const dueAt = new Date(periodStart.getTime() + settings.dueDays * 24 * 60 * 60 * 1000);
 
     await prismaClient.billingInvoice.create({
       data: {
@@ -251,10 +258,49 @@ async function generateMonthlyInvoices() {
   return { created };
 }
 
+async function getBillingSettings() {
+  const settings = await prismaClient.billingSetting.findUnique({ where: { id: 1 } });
+  if (settings) return settings;
+  return prismaClient.billingSetting.create({
+    data: {
+      id: 1,
+      automationEnabled: false,
+      suspendCron: '0 * * * *',
+      renewCron: '10 0 1 * *',
+      graceDays: 3,
+      dueDays: 7,
+      periodDays: 30,
+    },
+  });
+}
+
+async function updateBillingSettings(input: BillingSettingsInput) {
+  const current = await getBillingSettings();
+  if (input.suspendCron && !cron.validate(input.suspendCron)) {
+    throw { status: 400, message: 'Format cron suspend tidak valid.' };
+  }
+  if (input.renewCron && !cron.validate(input.renewCron)) {
+    throw { status: 400, message: 'Format cron perpanjang tidak valid.' };
+  }
+  return prismaClient.billingSetting.update({
+    where: { id: current.id },
+    data: {
+      automationEnabled: input.automationEnabled ?? current.automationEnabled,
+      suspendCron: input.suspendCron ?? current.suspendCron,
+      renewCron: input.renewCron ?? current.renewCron,
+      graceDays: typeof input.graceDays === 'number' ? input.graceDays : current.graceDays,
+      dueDays: typeof input.dueDays === 'number' ? input.dueDays : current.dueDays,
+      periodDays: typeof input.periodDays === 'number' ? input.periodDays : current.periodDays,
+    },
+  });
+}
+
 export default {
   markLatestInvoicePaid,
   listInvoices,
   getInvoiceById,
   applyOverdueSuspension,
   generateMonthlyInvoices,
+  getBillingSettings,
+  updateBillingSettings,
 };
