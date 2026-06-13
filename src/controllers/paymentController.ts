@@ -62,7 +62,7 @@ export async function getPaymentStatus(req: Request, res: Response) {
         const { orderId } = req.params;
         const userId = (req as any).user.id;
 
-        const id = parseInt(orderId);
+        const id = parseInt(orderId as string);
         if (isNaN(id)) {
             return responseHandler.error(res, 'Invalid order ID', 400);
         }

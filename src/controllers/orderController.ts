@@ -24,7 +24,7 @@ export async function getOrderDetail(req: Request, res: Response) {
         const userId = (req as any).user.id;
         const userRole = (req as any).user.role;
         
-        const orderId = parseInt(id);
+        const orderId = parseInt(id as string);
         if (isNaN(orderId)) {
             return responseHandler.error(res, 'Invalid order ID', 400);
         }
@@ -66,7 +66,7 @@ export async function approveOrder(req: Request, res: Response) {
         const adminId = (req as any).user.id;
         const data = approveOrderValidation.parse(req.body);
 
-        const orderId = parseInt(id);
+        const orderId = parseInt(id as string);
         if (isNaN(orderId)) {
             return responseHandler.error(res, 'Invalid order ID', 400);
         }
@@ -91,7 +91,7 @@ export async function rejectOrder(req: Request, res: Response) {
         const adminId = (req as any).user.id;
         const data = rejectOrderValidation.parse(req.body);
 
-        const orderId = parseInt(id);
+        const orderId = parseInt(id as string);
         if (isNaN(orderId)) {
             return responseHandler.error(res, 'Invalid order ID', 400);
         }
