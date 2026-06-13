@@ -27,6 +27,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
+    "ros-client": "^1.1.2",
     "routeros-client": "^1.1.1",
     "socket.io": "^4.8.1",
     "ssh2": "^1.15.0",

@@ -1,8 +1,12 @@
-import { RouterOSClient } from 'routeros-client';
+import RouterOSClient from 'ros-client';
 import { prismaClient } from '../application/prisma.js';
 import { Profile, Router } from '@prisma/client';
 
 const SIMULATION_HOST = 'SIMULATION';
+
+type RouterOSApi = {
+  send(words: string[]): Promise<Array<Record<string, string>>>;
+};
 
 function isSimulation(router: Router) {
   return process.env.MIKROTIK_SIMULATION === 'true' || router.host === SIMULATION_HOST;
@@ -20,11 +24,23 @@ async function withRouterApi<T>(routerId: number, handler: (api: any) => Promise
     throw { status: 400, message: 'Router is configured for simulation mode.' };
   }
 
+  // Legacy implementation:
+  // const client = new RouterOSClient from 'routeros-client'({
+  //   host: router.host,
+  //   user: router.user,
+  //   password: router.password,
+  //   port: router.portApi || router.port || 8728,
+  // });
+  //
+  // Client lama tersebut bergantung pada node-routeros dan dapat crash pada
+  // RouterOS 7.18+ saat router mengembalikan reply !empty.
   const client = new RouterOSClient({
     host: router.host,
-    user: router.user,
+    username: router.user,
     password: router.password,
     port: router.portApi || router.port || 8728,
+    tls: false,
+    timeout: 10000,
   });
 
   const api = await client.connect();
@@ -33,6 +49,15 @@ async function withRouterApi<T>(routerId: number, handler: (api: any) => Promise
   } finally {
     await client.close();
   }
+}
+
+async function findPppSecret(api: RouterOSApi, username: string) {
+  const rows = await api.send(['/ppp/secret/print', `?name=${username}`]);
+  return rows[0] ?? null;
+}
+
+function getRouterOSId(row: Record<string, string>) {
+  return row['.id'] || row.id;
 }
 
 // Menambahkan user PPP baru
@@ -49,16 +74,17 @@ async function addPppSecret(profile: Profile & { router: Router }) {
     return;
   }
 
-  return withRouterApi(profile.routerId, async (api) => {
-    const payload: any = {
-      name: profile.pppUsername,
-      password: profile.pppPassword,
-      service: 'pppoe',
-    };
+  return withRouterApi(profile.routerId, async (api: RouterOSApi) => {
+    const command = [
+      '/ppp/secret/add',
+      `=name=${profile.pppUsername}`,
+      `=password=${profile.pppPassword}`,
+      '=service=pppoe',
+    ];
     if (profile.pppProfile?.trim()) {
-      payload.profile = profile.pppProfile.trim();
+      command.push(`=profile=${profile.pppProfile.trim()}`);
     }
-    await api.menu('/ppp/secret').add(payload);
+    await api.send(command);
   });
 }
 
@@ -79,12 +105,12 @@ async function updatePppProfile(username: string, routerId: number, newProfile: 
     return;
   }
 
-  return withRouterApi(routerId, async (api) => {
-    const secrets = await api.menu('/ppp/secret').getAll({ name: username });
-    if (secrets.length === 0) {
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const secret = await findPppSecret(api, username);
+    if (!secret) {
       throw { status: 404, message: `PPP user '${username}' not found on the router.` };
     }
-    await api.menu('/ppp/secret').set(secrets[0].id, { profile: newProfile });
+    await api.send(['/ppp/secret/set', `=.id=${getRouterOSId(secret)}`, `=profile=${newProfile}`]);
   });
 }
 
@@ -103,10 +129,10 @@ async function disablePppSecret(username: string, routerId: number) {
     return;
   }
 
-  return withRouterApi(routerId, async (api) => {
-    const secrets = await api.menu('/ppp/secret').getAll({ name: username });
-    if (secrets.length === 0) throw { status: 404, message: `PPP user '${username}' not found.` };
-    await api.menu('/ppp/secret').disable(secrets[0].id);
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const secret = await findPppSecret(api, username);
+    if (!secret) throw { status: 404, message: `PPP user '${username}' not found.` };
+    await api.send(['/ppp/secret/disable', `=.id=${getRouterOSId(secret)}`]);
   });
 }
 
@@ -125,10 +151,10 @@ async function enablePppSecret(username: string, routerId: number) {
     return;
   }
 
-  return withRouterApi(routerId, async (api) => {
-    const secrets = await api.menu('/ppp/secret').getAll({ name: username });
-    if (secrets.length === 0) throw { status: 404, message: `PPP user '${username}' not found.` };
-    await api.menu('/ppp/secret').enable(secrets[0].id);
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const secret = await findPppSecret(api, username);
+    if (!secret) throw { status: 404, message: `PPP user '${username}' not found.` };
+    await api.send(['/ppp/secret/enable', `=.id=${getRouterOSId(secret)}`]);
   });
 }
 
@@ -153,16 +179,17 @@ async function createPppSecret(routerId: number, data: { name: string; password:
     return { success: true };
   }
 
-  return withRouterApi(routerId, async (api) => {
-    const payload: any = {
-      name: data.name,
-      password: data.password,
-      service: 'pppoe',
-    };
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const command = [
+      '/ppp/secret/add',
+      `=name=${data.name}`,
+      `=password=${data.password}`,
+      '=service=pppoe',
+    ];
     if (data.profile?.trim()) {
-      payload.profile = data.profile.trim();
+      command.push(`=profile=${data.profile.trim()}`);
     }
-    await api.menu('/ppp/secret').add(payload);
+    await api.send(command);
     return { success: true };
   });
 }
@@ -181,7 +208,7 @@ async function getActiveUsers(routerId: number) {
     }));
   }
 
-  return withRouterApi(routerId, (api) => api.menu('/ppp/active').getAll());
+  return withRouterApi(routerId, (api: RouterOSApi) => api.send(['/ppp/active/print']));
 }
 
 /**
