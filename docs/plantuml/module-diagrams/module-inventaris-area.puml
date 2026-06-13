@@ -1,0 +1,70 @@
+@startuml
+title Class Diagram Modul Inventaris dan Area Layanan
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+class Admin {
+  + kelolaInventaris()
+  + kelolaAreaLayanan()
+}
+
+class InventoryCategory {
+  - id: Int
+  - nama: String
+  --
+  + tambahKategori()
+  + ubahKategori()
+}
+
+class InventoryItem {
+  - id: Int
+  - inventoryCategoryId: Int
+  - nama: String
+  - stok: Int
+  - satuan: String
+  --
+  + tambahItem()
+  + ubahItem()
+  + tambahStok()
+  + kurangiStok()
+}
+
+class TicketSurveyItem {
+  - id: Int
+  - inventoryItemId: Int
+  - quantity: Int
+}
+
+class CoveredArea {
+  - id: Int
+  - provinsi: String
+  - kota: String
+  - kecamatan: String
+  - kelurahan: String
+  --
+  + tambahArea()
+  + ubahArea()
+  + cekCakupanLokasi()
+}
+
+class CoverageCheckHistory {
+  - id: Int
+  - alamatLengkap: String
+  - isCovered: Boolean
+  - checkedAt: DateTime
+  --
+  + simpanHasilPengecekan()
+}
+
+InventoryCategory "1" -- "*" InventoryItem
+InventoryItem "1" -- "*" TicketSurveyItem
+CoveredArea "1" -- "*" CoverageCheckHistory
+
+Admin ..> InventoryCategory
+Admin ..> InventoryItem
+Admin ..> CoveredArea
+
+@enduml

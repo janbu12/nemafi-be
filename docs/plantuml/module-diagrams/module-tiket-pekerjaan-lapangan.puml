@@ -1,0 +1,135 @@
+@startuml
+title Class Diagram Modul Tiket dan Pekerjaan Lapangan
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+class Admin {
+  + kelolaTiket()
+  + jadwalkanTiket()
+  + assignTeknisi()
+}
+
+class Teknisi {
+  + melihatTiketDitugaskan()
+  + melakukanSurvey()
+  + melakukanInstalasi()
+  + melaporkanHasilPengerjaan()
+}
+
+class Order {
+  - id: Int
+  - status: OrderStatus
+}
+
+class Ticket {
+  - id: Int
+  - orderId: Int
+  - ticketCategoryId: Int
+  - status: TicketStatus
+  - scheduledAt: DateTime
+  --
+  + buatTiket()
+  + jadwalkanTiket()
+  + assignTeknisi()
+  + updateStatus()
+  + tutupTiket()
+}
+
+class TicketCategory {
+  - id: Int
+  - nama: String
+  - requiresTechnician: Boolean
+  --
+  + tambahKategoriTiket()
+  + ubahKategoriTiket()
+}
+
+class TicketSurvey {
+  - id: Int
+  - ticketId: Int
+  - catatanSurvey: String
+  --
+  + catatHasilSurvey()
+  + tambahRencanaItem()
+  + tambahPemakaianAktual()
+}
+
+class TicketSurveyItem {
+  - id: Int
+  - ticketSurveyId: Int
+  - inventoryItemId: Int
+  - type: SurveyItemType
+  - quantity: Int
+  --
+  + tambahItem()
+  + ubahJumlah()
+}
+
+class TicketHistory {
+  - id: Int
+  - ticketId: Int
+  - aksi: String
+  - createdAt: DateTime
+  --
+  + catatAktivitas()
+}
+
+class TicketAttachment {
+  - id: Int
+  - ticketId: Int
+  - filename: String
+  - fileUrl: String
+  --
+  + uploadLampiran()
+  + hapusLampiran()
+}
+
+class TicketTechnicianMember {
+  - id: Int
+  - ticketId: Int
+  - teknisiId: Int
+  --
+  + tambahTeknisi()
+  + hapusTeknisi()
+}
+
+class InventoryItem {
+  - id: Int
+  - nama: String
+  - stok: Int
+}
+
+class "«enumeration»\nTicketStatus" as TicketStatus {
+  OPEN
+  SCHEDULED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+class "«enumeration»\nSurveyItemType" as SurveyItemType {
+  PLANNED
+  ACTUAL
+}
+
+Order "1" -- "*" Ticket
+TicketCategory "1" -- "*" Ticket
+Ticket "1" -- "0..1" TicketSurvey
+Ticket "1" *-- "*" TicketHistory
+Ticket "1" *-- "*" TicketAttachment
+Ticket "1" *-- "*" TicketTechnicianMember
+TicketSurvey "1" *-- "*" TicketSurveyItem
+InventoryItem "1" -- "*" TicketSurveyItem
+
+Teknisi "1" -- "*" Ticket
+Teknisi "1" -- "*" TicketTechnicianMember
+Ticket ..> TicketStatus
+TicketSurveyItem ..> SurveyItemType
+
+Admin ..> Ticket
+Admin ..> TicketCategory
+
+@enduml

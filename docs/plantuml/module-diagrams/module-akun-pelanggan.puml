@@ -1,0 +1,73 @@
+@startuml
+title Class Diagram Modul Akun dan Pelanggan
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+class User {
+  - id: Int
+  - nama: String
+  - email: String
+  - password: String
+  - role: Role
+  --
+  + login()
+  + logout()
+  + updateDataAkun()
+}
+
+class Pelanggan {
+  + daftarLayanan()
+  + melakukanPembayaran()
+  + mengajukanTiketGangguan()
+}
+
+class Admin {
+  + verifikasiPendaftaran()
+  + kelolaDataPelanggan()
+  + kelolaTiket()
+}
+
+class Teknisi {
+  + melihatTiketDitugaskan()
+  + melakukanSurvey()
+  + melaporkanHasilPengerjaan()
+}
+
+class Profile {
+  - id: Int
+  - pelangganId: Int
+  - nomorTelepon: String
+  - alamatLengkap: String
+  - latitude: Float
+  - longitude: Float
+  --
+  + updateProfile()
+  + updateLokasi()
+}
+
+class Router {
+  - id: Int
+  - nama: String
+  - host: String
+  --
+  + testKoneksi()
+}
+
+class "«enumeration»\nRole" as Role {
+  PELANGGAN
+  ADMIN
+  TEKNISI
+}
+
+User <|-- Pelanggan
+User <|-- Admin
+User <|-- Teknisi
+User ..> Role
+
+Pelanggan "1" -- "0..1" Profile
+Router "1" -- "*" Profile
+
+@enduml

@@ -1,0 +1,84 @@
+@startuml
+title Class Diagram Modul Paket dan Pendaftaran Layanan
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+class Pelanggan {
+  + daftarLayanan()
+  + memilihPaket()
+  + melihatStatusOrder()
+}
+
+class Admin {
+  + verifikasiPendaftaran()
+  + kelolaPaketLayanan()
+}
+
+class CategoryPackage {
+  - id: Int
+  - nama: String
+  --
+  + tambahKategori()
+  + ubahKategori()
+}
+
+class "Package" as InternetPackage {
+  - id: Int
+  - nama: String
+  - harga: Float
+  - downloadSpeed: Float
+  - uploadSpeed: Float
+  --
+  + tambahPaket()
+  + ubahPaket()
+  + lihatDetailPaket()
+}
+
+class Order {
+  - id: Int
+  - pelangganId: Int
+  - packageId: Int
+  - status: OrderStatus
+  - total: Float
+  --
+  + buatOrder()
+  + hitungTotal()
+  + updateStatus()
+  + verifikasiPendaftaran()
+}
+
+class PackageHistory {
+  - id: Int
+  - pelangganId: Int
+  - packageId: Int
+  - startedAt: DateTime
+  - endedAt: DateTime
+  --
+  + catatAktivasiPaket()
+  + catatPerubahanPaket()
+}
+
+class "«enumeration»\nOrderStatus" as OrderStatus {
+  PENDING_REVIEW
+  REVIEW_APPROVED
+  SURVEY_SCHEDULED
+  TECHNICIAN_ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+CategoryPackage "1" -- "*" InternetPackage
+Order "*" -- "1" InternetPackage
+Pelanggan "1" -- "*" Order
+Pelanggan "1" -- "*" PackageHistory
+InternetPackage "1" -- "*" PackageHistory
+Order ..> OrderStatus
+
+Admin ..> CategoryPackage
+Admin ..> InternetPackage
+Admin ..> Order
+
+@enduml

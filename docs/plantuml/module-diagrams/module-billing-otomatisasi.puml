@@ -1,0 +1,75 @@
+@startuml
+title Class Diagram Modul Billing dan Otomatisasi Layanan
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+class Admin {
+  + memantauTagihan()
+  + kelolaRouter()
+}
+
+class Pelanggan {
+  + melihatTagihan()
+  + melakukanPembayaran()
+}
+
+class Profile {
+  - id: Int
+  - pelangganId: Int
+  - usernamePpp: String
+  - passwordPpp: String
+}
+
+class BillingInvoice {
+  - id: Int
+  - pelangganId: Int
+  - amount: Float
+  - dueAt: DateTime
+  - status: BillingStatus
+  --
+  + generateInvoice()
+  + tandaiDibayar()
+  + tandaiTerlambat()
+}
+
+class SuspensionHistory {
+  - id: Int
+  - pelangganId: Int
+  - reason: String
+  - suspendedAt: DateTime
+  - resumedAt: DateTime
+  --
+  + catatSuspend()
+  + catatReaktivasi()
+}
+
+class Router {
+  - id: Int
+  - nama: String
+  - host: String
+  - portApi: Int
+  --
+  + testKoneksi()
+  + aktivasiLayanan()
+  + suspendLayanan()
+  + reaktivasiLayanan()
+}
+
+class "«enumeration»\nBillingStatus" as BillingStatus {
+  PAID
+  UNPAID
+  OVERDUE
+}
+
+Pelanggan "1" -- "*" BillingInvoice
+Pelanggan "1" -- "*" SuspensionHistory
+Router "1" -- "*" Profile
+BillingInvoice ..> BillingStatus
+
+Admin ..> BillingInvoice
+Admin ..> Router
+
+@enduml
