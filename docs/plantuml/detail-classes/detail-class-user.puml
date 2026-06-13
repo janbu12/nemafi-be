@@ -1,0 +1,29 @@
+@startuml
+title Detail Class User
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class User {
+  - id: Int
+  - nama: String
+  - email: String
+  - password: String
+  - role: Role
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + login()
+  + logout()
+  + updateDataAkun()
+  + verifikasiPassword()
+}
+
+class "«enumeration»\nRole" as Role {
+  PELANGGAN
+  ADMIN
+  TEKNISI
+}
+
+User ..> Role
+@enduml

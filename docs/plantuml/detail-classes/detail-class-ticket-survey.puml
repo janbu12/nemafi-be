@@ -1,0 +1,23 @@
+@startuml
+title Detail Class TicketSurvey
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketSurvey {
+  - id: Int
+  - ticketId: Int
+  - installationTicketId: Int
+  - catatanSurvey: String
+  - hasilSurvey: String
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + catatHasilSurvey()
+  + tambahRencanaItem()
+  + tambahPemakaianAktual()
+  + buatTiketInstalasi()
+  + updateCatatanSurvey()
+}
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+title Detail Class CoveredCheckHistory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class CoveredCheckHistory {
+  - id: Int
+  - alamatLengkap: String
+  - provinsi: String
+  - kota: String
+  - kecamatan: String
+  - kelurahan: String
+  - userLocation: Point
+  - isCovered: Boolean
+  - checkedAt: DateTime
+  --
+  + simpanHasilPengecekan()
+  + lihatRiwayatPengecekan()
+}
+
+@enduml

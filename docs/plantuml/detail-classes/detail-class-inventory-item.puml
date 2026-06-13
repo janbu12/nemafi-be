@@ -1,0 +1,24 @@
+@startuml
+title Detail Class InventoryItem
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class InventoryItem {
+  - id: Int
+  - inventoryCategoryId: Int
+  - nama: String
+  - stok: Int
+  - satuan: String
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + tambahItem()
+  + ubahItem()
+  + hapusItem()
+  + tambahStok()
+  + kurangiStok()
+  + cekKetersediaan()
+}
+
+@enduml

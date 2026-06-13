@@ -1,0 +1,20 @@
+@startuml
+title Detail Class TicketCategory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketCategory {
+  - id: Int
+  - nama: String
+  - requiresTechnician: Boolean
+  - isExpirable: Boolean
+  - expireHours: Int
+  --
+  + tambahKategoriTiket()
+  + ubahKategoriTiket()
+  + hapusKategoriTiket()
+  + tentukanKebutuhanTeknisi()
+}
+
+@enduml

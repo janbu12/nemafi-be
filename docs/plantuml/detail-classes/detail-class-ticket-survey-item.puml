@@ -1,0 +1,28 @@
+@startuml
+title Detail Class TicketSurveyItem
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketSurveyItem {
+  - id: Int
+  - ticketSurveyId: Int
+  - inventoryItemId: Int
+  - type: SurveyItemType
+  - quantity: Int
+  - satuan: String
+  - catatan: String
+  --
+  + tambahItem()
+  + ubahJumlah()
+  + ubahTipeItem()
+  + hapusItem()
+}
+
+class "«enumeration»\nSurveyItemType" as SurveyItemType {
+  PLANNED
+  ACTUAL
+}
+
+TicketSurveyItem ..> SurveyItemType
+@enduml

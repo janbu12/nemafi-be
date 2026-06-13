@@ -1,0 +1,21 @@
+@startuml
+title Detail Class TicketAttachment
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketAttachment {
+  - id: Int
+  - ticketId: Int
+  - filename: String
+  - mimeType: String
+  - fileUrl: String
+  - uploadedBy: Int
+  - createdAt: DateTime
+  --
+  + uploadLampiran()
+  + lihatLampiran()
+  + hapusLampiran()
+}
+
+@enduml

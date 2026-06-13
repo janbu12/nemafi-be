@@ -1,0 +1,24 @@
+@startuml
+title Detail Class Package
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class "Package" as InternetPackage {
+  - id: Int
+  - categoryPackageId: Int
+  - nama: String
+  - harga: Float
+  - downloadSpeed: Float
+  - uploadSpeed: Float
+  - deskripsi: String
+  - isPopular: Boolean
+  --
+  + tambahPaket()
+  + ubahPaket()
+  + hapusPaket()
+  + lihatDetailPaket()
+  + hitungHarga()
+}
+
+@enduml

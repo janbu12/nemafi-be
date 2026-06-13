@@ -1,0 +1,27 @@
+@startuml
+title Detail Class Router
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Router {
+  - id: Int
+  - nama: String
+  - host: String
+  - username: String
+  - password: String
+  - portApi: Int
+  - portSsh: Int
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + tambahRouter()
+  + ubahRouter()
+  + hapusRouter()
+  + testKoneksi()
+  + aktivasiLayanan()
+  + suspendLayanan()
+  + reaktivasiLayanan()
+}
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+title Detail Class Admin
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Admin {
+  --
+  + verifikasiPendaftaran()
+  + kelolaDataPelanggan()
+  + kelolaPaketLayanan()
+  + kelolaInventaris()
+  + kelolaAreaLayanan()
+  + kelolaRouter()
+  + kelolaTiket()
+  + jadwalkanTiket()
+  + assignTeknisi()
+  + memantauTagihan()
+  + melihatLaporan()
+}
+
+@enduml

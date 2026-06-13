@@ -1,0 +1,99 @@
+@startuml
+title Class Diagram Overview Konseptual - Manajemen Pelanggan dan Otomatisasi Layanan Internet
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam packageTitleAlignment left
+skinparam nodesep 65
+skinparam ranksep 55
+hide members
+hide circle
+
+left to right direction
+
+package "Akun dan Pelanggan" {
+  class User
+  class Pelanggan
+  class Admin
+  class Teknisi
+  class Profile
+
+  User <|-- Pelanggan
+  User <|-- Admin
+  User <|-- Teknisi
+  Pelanggan "1" -- "0..1" Profile
+}
+
+package "Paket dan Pendaftaran Layanan" {
+  class CategoryPackage
+  class "Package" as InternetPackage
+  class Order
+  class PackageHistory
+
+  CategoryPackage "1" -- "*" InternetPackage
+  Order "*" -- "1" InternetPackage
+  Pelanggan "1" -- "*" Order
+  Pelanggan "1" -- "*" PackageHistory
+  InternetPackage "1" -- "*" PackageHistory
+}
+
+package "Tiket dan Pekerjaan Lapangan" {
+  class Ticket
+  class TicketCategory
+  class TicketSurvey
+  class TicketSurveyItem
+  class TicketHistory
+  class TicketAttachment
+  class TicketTechnicianMember
+
+  Order "1" -- "*" Ticket
+  TicketCategory "1" -- "*" Ticket
+  Ticket "1" -- "0..1" TicketSurvey
+  Ticket "1" *-- "*" TicketHistory
+  Ticket "1" *-- "*" TicketAttachment
+  Ticket "1" *-- "*" TicketTechnicianMember
+  TicketSurvey "1" *-- "*" TicketSurveyItem
+  Teknisi "1" -- "*" Ticket
+  Teknisi "1" -- "*" TicketTechnicianMember
+}
+
+package "Inventaris dan Area Layanan" {
+  class InventoryCategory
+  class InventoryItem
+  class CoveredArea
+  class CoverageCheckHistory
+
+  InventoryCategory "1" -- "*" InventoryItem
+  InventoryItem "1" -- "*" TicketSurveyItem
+  CoveredArea "1" -- "*" CoverageCheckHistory
+}
+
+package "Billing dan Otomatisasi Layanan" {
+  class BillingInvoice
+  class BillingSetting
+  class SuspensionHistory
+  class Router
+
+  Pelanggan "1" -- "*" BillingInvoice
+  Pelanggan "1" -- "*" SuspensionHistory
+  BillingSetting .. BillingInvoice
+  Router "1" -- "*" Profile
+}
+
+Admin ..> Order
+Admin ..> Ticket
+Admin ..> InternetPackage
+Admin ..> InventoryItem
+Admin ..> CoveredArea
+Admin ..> Router
+Admin ..> BillingInvoice
+Admin ..> BillingSetting
+
+Pelanggan -[hidden]right- Order
+Order -[hidden]right- Ticket
+Ticket -[hidden]right- InventoryItem
+InventoryItem -[hidden]right- BillingInvoice
+
+@enduml

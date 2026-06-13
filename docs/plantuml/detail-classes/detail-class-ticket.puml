@@ -1,0 +1,36 @@
+@startuml
+title Detail Class Ticket
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Ticket {
+  - id: Int
+  - orderId: Int
+  - ticketCategoryId: Int
+  - teknisiUtamaId: Int
+  - judul: String
+  - deskripsi: String
+  - status: TicketStatus
+  - scheduledAt: DateTime
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + buatTiket()
+  + jadwalkanTiket()
+  + assignTeknisi()
+  + updateStatus()
+  + tambahLampiran()
+  + tutupTiket()
+}
+
+class "«enumeration»\nTicketStatus" as TicketStatus {
+  OPEN
+  SCHEDULED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+Ticket ..> TicketStatus
+@enduml

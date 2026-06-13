@@ -1,0 +1,21 @@
+@startuml
+title Detail Class PackageHistory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class PackageHistory {
+  - id: Int
+  - pelangganId: Int
+  - packageId: Int
+  - startedAt: DateTime
+  - endedAt: DateTime
+  - alasan: String
+  --
+  + catatAktivasiPaket()
+  + catatPerubahanPaket()
+  + akhiriRiwayatPaket()
+  + lihatRiwayatPaket()
+}
+
+@enduml

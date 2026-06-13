@@ -1,0 +1,16 @@
+@startuml
+title Detail Class Pelanggan
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Pelanggan {
+  + daftarLayanan()
+  + memilihPaket()
+  + melakukanPembayaran()
+  + melihatStatusOrder()
+  + mengajukanTiketGangguan()
+  + melihatTagihan()
+}
+
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+title Detail Class SuspensionHistory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class SuspensionHistory {
+  - id: Int
+  - pelangganId: Int
+  - reason: String
+  - suspendedAt: DateTime
+  - resumedAt: DateTime
+  - createdAt: DateTime
+  --
+  + catatSuspend()
+  + catatReaktivasi()
+  + lihatRiwayatSuspend()
+}
+
+@enduml

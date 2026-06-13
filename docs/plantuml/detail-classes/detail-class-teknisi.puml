@@ -1,0 +1,16 @@
+@startuml
+title Detail Class Teknisi
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Teknisi {
+  + melihatTiketDitugaskan()
+  + menerimaTugas()
+  + melakukanSurvey()
+  + melakukanInstalasi()
+  + updateProgressPekerjaan()
+  + melaporkanHasilPengerjaan()
+}
+
+@enduml

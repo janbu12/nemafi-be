@@ -1,0 +1,26 @@
+@startuml
+title Detail Class Profile
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Profile {
+  - id: Int
+  - pelangganId: Int
+  - nomorTelepon: String
+  - alamatLengkap: String
+  - provinsi: String
+  - kota: String
+  - kecamatan: String
+  - kelurahan: String
+  - latitude: Float
+  - longitude: Float
+  - usernamePpp: String
+  - passwordPpp: String
+  --
+  + updateProfile()
+  + updateLokasi()
+  + setKonfigurasiLayanan()
+}
+
+@enduml

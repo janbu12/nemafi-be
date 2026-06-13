@@ -1,0 +1,37 @@
+@startuml
+title Detail Class Order
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class Order {
+  - id: Int
+  - pelangganId: Int
+  - packageId: Int
+  - status: OrderStatus
+  - total: Float
+  - tanggalOrder: DateTime
+  - catatanReview: String
+  - reviewedAt: DateTime
+  --
+  + buatOrder()
+  + pilihPaket()
+  + hitungTotal()
+  + updateStatus()
+  + verifikasiPendaftaran()
+  + batalkanOrder()
+}
+
+class "«enumeration»\nOrderStatus" as OrderStatus {
+  PENDING_REVIEW
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  SURVEY_SCHEDULED
+  TECHNICIAN_ASSIGNED
+  INSTALLATION_IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+Order ..> OrderStatus
+@enduml

@@ -1,0 +1,19 @@
+@startuml
+title Detail Class CategoryPackage
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class CategoryPackage {
+  - id: Int
+  - nama: String
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + tambahKategori()
+  + ubahKategori()
+  + hapusKategori()
+  + lihatDaftarKategori()
+}
+
+@enduml

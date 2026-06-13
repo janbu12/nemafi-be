@@ -1,0 +1,19 @@
+@startuml
+title Detail Class InventoryCategory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class InventoryCategory {
+  - id: Int
+  - nama: String
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + tambahKategori()
+  + ubahKategori()
+  + hapusKategori()
+  + lihatDaftarKategori()
+}
+
+@enduml

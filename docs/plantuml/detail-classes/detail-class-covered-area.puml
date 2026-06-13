@@ -1,0 +1,23 @@
+@startuml
+title Detail Class CoveredArea
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class CoveredArea {
+  - id: Int
+  - provinsi: String
+  - kota: String
+  - kecamatan: String
+  - kelurahan: String
+  - alamatLengkap: String
+  - radiusMeter: Int
+  - titikPusat: Point
+  --
+  + tambahArea()
+  + ubahArea()
+  + hapusArea()
+  + cekCakupanLokasi()
+}
+
+@enduml

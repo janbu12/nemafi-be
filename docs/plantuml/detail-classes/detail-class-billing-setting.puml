@@ -1,0 +1,22 @@
+@startuml
+title Detail Class BillingSetting
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class BillingSetting {
+  - id: Int
+  - automationEnabled: Boolean
+  - suspendCron: String
+  - renewCron: String
+  - graceDays: Int
+  - dueDays: Int
+  - periodDays: Int
+  --
+  + ubahPengaturan()
+  + aktifkanOtomatisasi()
+  + nonaktifkanOtomatisasi()
+  + getPeriodeTagihan()
+}
+
+@enduml

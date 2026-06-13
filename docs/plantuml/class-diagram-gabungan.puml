@@ -1,0 +1,488 @@
+@startuml
+title Class Diagram Gabungan - Aplikasi Web Manajemen Pelanggan dan Otomatisasi Layanan Internet
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+hide circle
+
+left to right direction
+
+package "Akun dan Pelanggan" {
+  enum Role {
+    CUSTOMER
+    TECHNICIAN
+    TECH_ADMIN
+    SUPER_ADMIN
+  }
+
+  class User {
+    - id: Int
+    - email: String
+    - fullname: String
+    - password: String
+    - role: Role
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + login()
+    + logout()
+    + updateProfile()
+    + terimaNotifikasi()
+  }
+
+  class Pelanggan {
+    + daftarLayanan()
+    + melakukanPembayaran()
+    + lihatStatusOrderDanLayanan()
+    + ajukanTiketGangguan()
+    + lihatDetailTiket()
+  }
+
+  class Admin {
+    + verifikasiPendaftaran()
+    + kelolaTiket()
+    + jadwalkanTiket()
+    + assignTeknisi()
+    + kelolaDataPelanggan()
+    + kelolaPaketInternet()
+    + kelolaInventaris()
+    + kelolaRouter()
+    + lihatDashboardLaporan()
+  }
+
+  class Teknisi {
+    + lihatTiketDitugaskan()
+    + updateProgressInstalasi()
+    + updateStatusTiket()
+    + laporkanHasilPengerjaan()
+  }
+
+  class Profile {
+    - id: Int
+    - userId: Int
+    - phoneNumber: String
+    - imageUrl: String
+    - fullAddress: String
+    - province: String
+    - city: String
+    - district: String
+    - subdistrict: String
+    - latitude: Float
+    - longitude: Float
+    - pppUsername: String
+    - pppPassword: String
+    - pppProfile: String
+    - isPppActive: Boolean
+    + updateDataPelanggan()
+    + setRouter()
+    + setPppSecret()
+  }
+
+  User <|-- Pelanggan
+  User <|-- Admin
+  User <|-- Teknisi
+}
+
+package "Paket dan Pendaftaran Layanan" {
+  enum Status {
+    PENDING_REVIEW
+    REVIEW_APPROVED
+    REVIEW_REJECTED
+    SURVEY_SCHEDULED
+    SURVEY_COMPLETED
+    WAITING_FOR_ASSIGNMENT
+    TECHNICIAN_ASSIGNED
+    INSTALLATION_IN_PROGRESS
+    COMPLETED
+    CANCELLED
+  }
+
+  class CategoryPackage {
+    - id: Int
+    - name: String
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + getData()
+    + createData()
+    + updateData()
+    + deleteData()
+  }
+
+  class "Package" as InternetPackage {
+    - id: Int
+    - name: String
+    - price: Float
+    - downloadSpeed: Float
+    - uploadSpeed: Float
+    - isPopular: Boolean
+    - description: String
+    - metadata: Json
+    - categoryId: Int
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + getData()
+    + tambahPaket()
+    + updatePaket()
+    + hapusPaket()
+    + rekomendasiPaket()
+  }
+
+  class Order {
+    - id: Int
+    - userId: Int
+    - status: Status
+    - total: Float
+    - midtransTransactionId: String
+    - midtransOrderId: String
+    - redirectUrl: String
+    - reviewedBy: Int
+    - reviewNotes: String
+    - reviewedAt: DateTime
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + buatOrder()
+    + lihatStatus()
+    + verifikasiPendaftaran()
+    + updateStatusOrder()
+    + buatTiketSurvey()
+  }
+
+  class OrderItem {
+    - id: Int
+    - orderId: Int
+    - packageId: Int
+    + getDetailPaket()
+  }
+
+  CategoryPackage "1" -- "*" InternetPackage : mengelompokkan
+  Order "1" *-- "*" OrderItem : memiliki
+  InternetPackage "1" -- "*" OrderItem : dipilih pada
+}
+
+package "Pembayaran dan Billing" {
+  enum BillingStatus {
+    PAID
+    UNPAID
+    OVERDUE
+  }
+
+  class PaymentService {
+    + createPayment(orderId)
+    + handleMidtransWebhook()
+    + updatePaymentStatus()
+    + expirePayment()
+  }
+
+  class BillingInvoice {
+    - id: Int
+    - userId: Int
+    - amount: Float
+    - periodStart: DateTime
+    - periodEnd: DateTime
+    - status: BillingStatus
+    - dueAt: DateTime
+    - paidAt: DateTime
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + generateInvoice()
+    + markAsPaid()
+    + markAsOverdue()
+  }
+
+  class BillingSetting {
+    - id: Int
+    - automationEnabled: Boolean
+    - suspendCron: String
+    - renewCron: String
+    - graceDays: Int
+    - dueDays: Int
+    - periodDays: Int
+    + updateSetting()
+    + enableAutomation()
+    + disableAutomation()
+  }
+
+  PaymentService ..> Order : memproses pembayaran
+  User "1" -- "*" BillingInvoice : memiliki
+}
+
+package "Manajemen Tiket" {
+  enum TicketStatus {
+    OPEN
+    SCHEDULED
+    IN_PROGRESS
+    RESOLVED
+    CLOSED
+  }
+
+  enum TicketPaymentStatus {
+    PENDING_PAYMENT
+    PAID
+    EXPIRED
+  }
+
+  enum TicketHistoryActor {
+    SYSTEM
+    ADMIN
+    TECHNICIAN
+    CUSTOMER
+  }
+
+  class Ticket {
+    - id: Int
+    - orderId: Int
+    - technicianId: Int
+    - status: TicketStatus
+    - paymentStatus: TicketPaymentStatus
+    - title: String
+    - description: String
+    - categoryId: Int
+    - scheduledAt: DateTime
+    - expiresAt: DateTime
+    - paidAt: DateTime
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + buatTiket()
+    + lihatDetail()
+    + jadwalkan()
+    + assignTeknisi()
+    + updateStatus()
+    + tutupTiket()
+  }
+
+  class TicketCategory {
+    - id: Int
+    - name: String
+    - isExpirable: Boolean
+    - expireHours: Int
+    - requiresTechnician: Boolean
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + kelolaKategori()
+  }
+
+  class TicketHistory {
+    - id: Int
+    - ticketId: Int
+    - action: String
+    - description: String
+    - actorType: TicketHistoryActor
+    - actorId: Int
+    - createdAt: DateTime
+    + catatRiwayat()
+  }
+
+  class TicketAttachment {
+    - id: Int
+    - ticketId: Int
+    - filename: String
+    - mimeType: String
+    - dataUrl: String
+    - createdAt: DateTime
+    + uploadLampiran()
+  }
+
+  class TicketMember {
+    - id: Int
+    - ticketId: Int
+    - technicianId: Int
+    - createdAt: DateTime
+    + tambahTeknisi()
+    + hapusTeknisi()
+  }
+
+  class TicketSurvey {
+    - id: Int
+    - surveyTicketId: Int
+    - installationTicketId: Int
+    - plannedItems: Json
+    - actualItems: Json
+    - notes: String
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + simpanRencanaSurvey()
+    + laporkanHasilSurvey()
+    + buatTiketInstalasi()
+  }
+
+  Order "1" -- "*" Ticket : menghasilkan
+  TicketCategory "1" -- "*" Ticket : mengklasifikasi
+  Ticket "1" *-- "*" TicketHistory : mencatat
+  Ticket "1" *-- "*" TicketAttachment : melampirkan
+  Ticket "1" *-- "*" TicketMember : beranggotakan
+  Ticket "1" -- "0..1" TicketSurvey : survey
+  Ticket "1" -- "0..1" TicketSurvey : instalasi
+  User "1" -- "*" Ticket : assignedTickets
+  User "1" -- "*" TicketMember : teknisi anggota
+  User "1" -- "*" TicketHistory : aktor
+}
+
+package "Inventaris dan Area Layanan" {
+  class InventoryCategory {
+    - id: Int
+    - name: String
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + getData()
+    + createData()
+    + updateData()
+    + deleteData()
+  }
+
+  class InventoryItem {
+    - id: Int
+    - name: String
+    - stock: Int
+    - unit: String
+    - categoryId: Int
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + getData()
+    + tambahStok()
+    + kurangiStok()
+    + updateData()
+  }
+
+  class CoveredArea {
+    - id: Int
+    - province: String
+    - city: String
+    - district: String
+    - village: String
+    - fullAddress: String
+    - radiusM: Int
+    - center: GeographyPoint
+    - createdAt: DateTime
+    + cekAreaLayanan()
+    + kelolaArea()
+  }
+
+  class CoverageCheckHistory {
+    - id: Int
+    - fullAddress: String
+    - province: String
+    - city: String
+    - district: String
+    - village: String
+    - userLocation: GeographyPoint
+    - isCovered: Boolean
+    - checkedAt: DateTime
+    + simpanRiwayatCek()
+  }
+
+  InventoryCategory "1" -- "*" InventoryItem : memiliki
+  CoveredArea ..> CoverageCheckHistory : menghasilkan riwayat
+}
+
+package "Router dan Otomatisasi Layanan" {
+  class Router {
+    - id: Int
+    - name: String
+    - host: String
+    - user: String
+    - password: String
+    - portApi: Int
+    - portSsh: Int
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    + tambahRouter()
+    + updateRouter()
+    + hapusRouter()
+    + testConnection()
+  }
+
+  class MikrotikService {
+    + connect(routerId)
+    + createPppSecret(profile)
+    + activateService(userId)
+    + suspendService(userId)
+    + reactivateService(userId)
+    + executeConfiguration()
+  }
+
+  class SuspensionHistory {
+    - id: Int
+    - userId: Int
+    - reason: String
+    - suspendedAt: DateTime
+    - resumedAt: DateTime
+    - createdAt: DateTime
+    + catatSuspend()
+    + catatReaktivasi()
+  }
+
+  class PackageHistory {
+    - id: Int
+    - userId: Int
+    - packageId: Int
+    - startedAt: DateTime
+    - endedAt: DateTime
+    - reason: String
+    - createdAt: DateTime
+    + catatAktivasiPaket()
+    + catatPerubahanPaket()
+  }
+
+  Router "1" -- "*" Profile : digunakan oleh
+  MikrotikService ..> Router : koneksi API/SSH
+  MikrotikService ..> Profile : konfigurasi PPP
+  User "1" -- "*" SuspensionHistory : memiliki
+  User "1" -- "*" PackageHistory : memiliki
+  InternetPackage "1" -- "*" PackageHistory : tercatat pada
+}
+
+package "Pengaturan dan Notifikasi" {
+  class AppSetting {
+    - id: Int
+    - key: String
+    - value: String
+    - group: String
+    - type: String
+    - isSecret: Boolean
+    - updatedBy: Int
+    - updatedAt: DateTime
+    - createdAt: DateTime
+    + getSetting()
+    + updateSetting()
+  }
+
+  class NotificationService {
+    + kirimNotifikasi(userId, pesan)
+    + notifikasiPembayaran()
+    + notifikasiTiket()
+    + notifikasiAktivasiLayanan()
+  }
+
+  NotificationService ..> User : mengirim ke
+  NotificationService ..> Order : status order
+  NotificationService ..> Ticket : status tiket
+  NotificationService ..> BillingInvoice : status tagihan
+}
+
+User "1" -- "0..1" Profile : memiliki
+User "1" -- "*" Order : membuat
+Pelanggan ..> Order : pendaftaran layanan
+Pelanggan ..> PaymentService : pembayaran
+Admin ..> Order : verifikasi
+Admin ..> Ticket : kelola dan assign
+Teknisi ..> Ticket : pengerjaan
+Admin ..> InternetPackage : kelola
+Admin ..> InventoryItem : kelola
+Admin ..> Router : kelola
+Order ..> NotificationService : memicu
+Ticket ..> NotificationService : memicu
+BillingInvoice ..> NotificationService : memicu
+
+note right of User
+  User menjadi dasar aktor pada use case:
+  pelanggan, admin, dan teknisi.
+end note
+
+note bottom of MikrotikService
+  Dipakai oleh use case aktivasi layanan,
+  suspend layanan, reaktivasi layanan, dan
+  eksekusi konfigurasi router MikroTik.
+end note
+
+@enduml

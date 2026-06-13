@@ -1,0 +1,18 @@
+@startuml
+title Detail Class TicketTechnicianMember
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketTechnicianMember {
+  - id: Int
+  - ticketId: Int
+  - teknisiId: Int
+  - assignedAt: DateTime
+  --
+  + tambahTeknisi()
+  + hapusTeknisi()
+  + lihatAnggotaTeknisi()
+}
+
+@enduml

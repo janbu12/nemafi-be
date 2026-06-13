@@ -1,0 +1,31 @@
+@startuml
+title Detail Class BillingInvoice
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class BillingInvoice {
+  - id: Int
+  - pelangganId: Int
+  - amount: Float
+  - periodStart: DateTime
+  - periodEnd: DateTime
+  - dueAt: DateTime
+  - paidAt: DateTime
+  - status: BillingStatus
+  --
+  + generateInvoice()
+  + hitungTagihan()
+  + tandaiDibayar()
+  + tandaiTerlambat()
+  + cekJatuhTempo()
+}
+
+class "«enumeration»\nBillingStatus" as BillingStatus {
+  PAID
+  UNPAID
+  OVERDUE
+}
+
+BillingInvoice ..> BillingStatus
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+title Detail Class TicketHistory
+
+skinparam classAttributeIconSize 0
+hide circle
+
+class TicketHistory {
+  - id: Int
+  - ticketId: Int
+  - actorId: Int
+  - actorType: String
+  - aksi: String
+  - deskripsi: String
+  - createdAt: DateTime
+  --
+  + catatAktivitas()
+  + lihatRiwayat()
+}
+
+@enduml
