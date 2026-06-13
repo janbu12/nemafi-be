@@ -1,0 +1,300 @@
+Enum Role {
+  PELANGGAN
+  ADMIN
+  TEKNISI
+}
+
+Enum OrderStatus {
+  PENDING_REVIEW
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  SURVEY_SCHEDULED
+  TECHNICIAN_ASSIGNED
+  INSTALLATION_IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+Enum TicketStatus {
+  OPEN
+  SCHEDULED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+Enum BillingStatus {
+  PAID
+  UNPAID
+  OVERDUE
+}
+
+Enum SurveyItemType {
+  PLANNED
+  ACTUAL
+}
+
+Enum TicketHistoryActor {
+  SYSTEM
+  ADMIN
+  TEKNISI
+  PELANGGAN
+}
+
+Table User {
+  id int [pk, increment]
+  nama varchar
+  email varchar [unique]
+  password varchar
+  role Role
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table Profile {
+  id int [pk, increment]
+  pelangganId int [unique]
+  nomorTelepon varchar
+  imageUrl varchar [null]
+  alamatLengkap varchar
+  provinsi varchar
+  kota varchar
+  kecamatan varchar
+  kelurahan varchar
+  latitude float [null]
+  longitude float [null]
+  routerId int [null]
+  usernamePpp varchar [unique, null]
+  passwordPpp varchar [null]
+  profilePpp varchar [null]
+  isPppActive boolean [default: true]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table CategoryPackage {
+  id int [pk, increment]
+  nama varchar [unique]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table Package {
+  id int [pk, increment]
+  categoryPackageId int
+  nama varchar
+  harga int
+  downloadSpeed float
+  uploadSpeed float
+  deskripsi text
+  isPopular boolean [default: false]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table Order {
+  id int [pk, increment]
+  pelangganId int
+  packageId int
+  status OrderStatus [default: 'PENDING_REVIEW']
+  total int
+  catatanReview text [null]
+  reviewedAt datetime [null]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table PackageHistory {
+  id int [pk, increment]
+  pelangganId int
+  packageId int
+  startedAt datetime
+  endedAt datetime [null]
+  alasan text [null]
+  createdAt datetime [default: `now()`]
+}
+
+Table TicketCategory {
+  id int [pk, increment]
+  nama varchar [unique]
+  requiresTechnician boolean [default: false]
+  isExpirable boolean [default: false]
+  expireHours int [null]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table Ticket {
+  id int [pk, increment]
+  orderId int
+  ticketCategoryId int
+  teknisiUtamaId int [null]
+  judul varchar
+  deskripsi text [null]
+  status TicketStatus [default: 'OPEN']
+  scheduledAt datetime [null]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table TicketTechnicianMember {
+  id int [pk, increment]
+  ticketId int
+  teknisiId int
+  assignedAt datetime [default: `now()`]
+
+  Indexes {
+    (ticketId, teknisiId) [unique]
+  }
+}
+
+Table TicketHistory {
+  id int [pk, increment]
+  ticketId int
+  actorId int [null]
+  actorType TicketHistoryActor [default: 'SYSTEM']
+  aksi varchar
+  deskripsi text [null]
+  createdAt datetime [default: `now()`]
+}
+
+Table TicketAttachment {
+  id int [pk, increment]
+  ticketId int
+  filename varchar
+  mimeType varchar
+  fileUrl text
+  uploadedBy int [null]
+  createdAt datetime [default: `now()`]
+}
+
+Table TicketSurvey {
+  id int [pk, increment]
+  ticketId int [unique]
+  installationTicketId int [unique, null]
+  catatanSurvey text [null]
+  hasilSurvey text [null]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table TicketSurveyItem {
+  id int [pk, increment]
+  ticketSurveyId int
+  inventoryItemId int
+  type SurveyItemType
+  quantity int
+  satuan varchar
+  catatan text [null]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table InventoryCategory {
+  id int [pk, increment]
+  nama varchar [unique]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table InventoryItem {
+  id int [pk, increment]
+  inventoryCategoryId int
+  nama varchar
+  stok int [default: 0]
+  satuan varchar
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table CoveredArea {
+  id int [pk, increment]
+  provinsi varchar
+  kota varchar
+  kecamatan varchar
+  kelurahan varchar
+  alamatLengkap text [null]
+  radiusMeter int [default: 10000]
+  titikPusat geography [null]
+  createdAt datetime [default: `now()`]
+
+  Indexes {
+    (provinsi, kota, kecamatan, kelurahan) [unique]
+  }
+}
+
+Table CoverageCheckHistory {
+  id int [pk, increment]
+  coveredAreaId int [null]
+  alamatLengkap text
+  provinsi varchar
+  kota varchar
+  kecamatan varchar
+  kelurahan varchar
+  userLocation geography [null]
+  isCovered boolean
+  checkedAt datetime [default: `now()`]
+}
+
+Table BillingInvoice {
+  id int [pk, increment]
+  pelangganId int
+  amount int
+  periodStart datetime
+  periodEnd datetime
+  dueAt datetime
+  paidAt datetime [null]
+  status BillingStatus [default: 'UNPAID']
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Table SuspensionHistory {
+  id int [pk, increment]
+  pelangganId int
+  reason text
+  suspendedAt datetime
+  resumedAt datetime [null]
+  createdAt datetime [default: `now()`]
+}
+
+Table Router {
+  id int [pk, increment]
+  nama varchar [unique]
+  host varchar
+  username varchar
+  password varchar
+  portApi int [default: 8728]
+  portSsh int [default: 22]
+  createdAt datetime [default: `now()`]
+  updatedAt datetime [note: 'auto-updated timestamp']
+}
+
+Ref: Profile.pelangganId > User.id
+Ref: Profile.routerId > Router.id
+
+Ref: Package.categoryPackageId > CategoryPackage.id
+Ref: Order.pelangganId > User.id
+Ref: Order.packageId > Package.id
+Ref: PackageHistory.pelangganId > User.id
+Ref: PackageHistory.packageId > Package.id
+
+Ref: Ticket.orderId > Order.id
+Ref: Ticket.ticketCategoryId > TicketCategory.id
+Ref: Ticket.teknisiUtamaId > User.id
+Ref: TicketTechnicianMember.ticketId > Ticket.id
+Ref: TicketTechnicianMember.teknisiId > User.id
+Ref: TicketHistory.ticketId > Ticket.id
+Ref: TicketHistory.actorId > User.id
+Ref: TicketAttachment.ticketId > Ticket.id
+Ref: TicketAttachment.uploadedBy > User.id
+Ref: TicketSurvey.ticketId > Ticket.id
+Ref: TicketSurvey.installationTicketId > Ticket.id
+Ref: TicketSurveyItem.ticketSurveyId > TicketSurvey.id
+Ref: TicketSurveyItem.inventoryItemId > InventoryItem.id
+
+Ref: InventoryItem.inventoryCategoryId > InventoryCategory.id
+Ref: CoverageCheckHistory.coveredAreaId > CoveredArea.id
+
+Ref: BillingInvoice.pelangganId > User.id
+Ref: SuspensionHistory.pelangganId > User.id
