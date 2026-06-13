@@ -1,0 +1,58 @@
+@startuml
+title Sequence Diagram Pendaftaran Layanan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pelanggan
+participant ":CoveredArea" as CoveredArea
+participant ":CoverageCheckHistory" as CoverageCheckHistory
+participant ":Profile" as Profile
+participant ":Package" as InternetPackage
+participant ":Order" as Order
+actor Admin
+
+Pelanggan -> CoveredArea: cekCakupanLokasi(alamat, lokasi)
+activate CoveredArea
+CoveredArea -> CoverageCheckHistory: simpanHasilPengecekan()
+activate CoverageCheckHistory
+CoverageCheckHistory --> CoveredArea: hasilPengecekan
+deactivate CoverageCheckHistory
+CoveredArea --> Pelanggan: informasiCakupanArea
+deactivate CoveredArea
+
+alt area layanan tidak tersedia
+  Pelanggan -> Pelanggan: membatalkanPendaftaran()
+else area layanan tersedia
+  Pelanggan -> Profile: updateProfile(dataPelanggan, alamat, lokasi)
+  activate Profile
+  Profile --> Pelanggan: dataProfileTersimpan
+  deactivate Profile
+
+  Pelanggan -> InternetPackage: lihatDaftarPaket()
+  activate InternetPackage
+  InternetPackage --> Pelanggan: daftarPaket
+  deactivate InternetPackage
+
+  Pelanggan -> InternetPackage: lihatDetailPaket(packageId)
+  activate InternetPackage
+  InternetPackage --> Pelanggan: detailPaket
+  deactivate InternetPackage
+
+  Pelanggan -> Order: buatOrder(pelangganId, packageId)
+  activate Order
+  Order -> InternetPackage: hitungHarga(packageId)
+  activate InternetPackage
+  InternetPackage --> Order: hargaPaket
+  deactivate InternetPackage
+  Order -> Order: hitungTotal()
+  Order -> Order: updateStatus(PENDING_REVIEW)
+  Order --> Pelanggan: orderBerhasilDibuat
+  deactivate Order
+
+  Order -> Admin: notifikasiOrderBaru()
+  Admin --> Order: notifikasiDiterima
+end
+
+@enduml
