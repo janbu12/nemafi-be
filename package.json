@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "lint": "echo 'Add ESLint if you want'"
+    "lint": "echo 'Add ESLint if you want'",
+    "render:plantuml": "node scripts/render-plantuml.mjs",
+    "render:class-diagram": "node scripts/render-plantuml.mjs docs/plantuml/class-diagram-gabungan.puml"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
