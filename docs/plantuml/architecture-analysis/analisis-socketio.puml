@@ -1,0 +1,60 @@
+@startuml
+title Analisis Penggunaan Socket.io
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 8
+}
+skinparam partition {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+skinparam arrowColor black
+
+|Pengguna|
+start
+:Membuka halaman dashboard\nsesuai peran;
+
+|Aplikasi Frontend|
+:Membuat koneksi Socket.io\nke backend;
+
+|Aplikasi Backend|
+:Menginisialisasi Socket.io\npada path /socket.io;
+:Menerima koneksi client;
+
+|Proses Sistem|
+:Terjadi perubahan data\norder, tiket, atau billing;
+
+|Aplikasi Backend|
+:Service memanggil event emitter\nsesuai perubahan data;
+:Mengirim event realtime\norders, tickets, atau billing;
+
+|Aplikasi Frontend|
+:Menerima event realtime;
+:Memperbarui tampilan dashboard\natau daftar data;
+
+|Pengguna|
+:Melihat notifikasi atau\nperubahan status tanpa refresh;
+
+|Admin|
+:Membuka terminal router;
+
+|Aplikasi Backend|
+:Membuka namespace /terminal;
+:Mengambil data router\ndari database;
+:Membuka koneksi SSH\nke router;
+
+|Aplikasi Frontend|
+:Mengirim input terminal\nmelalui Socket.io;
+:Menerima output terminal\nsecara realtime;
+
+|Admin|
+:Melihat hasil perintah terminal;
+stop
+@enduml

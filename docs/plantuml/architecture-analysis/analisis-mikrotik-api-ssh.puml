@@ -1,0 +1,55 @@
+@startuml
+title Analisis Penggunaan MikroTik API dan SSH
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 8
+}
+skinparam partition {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+skinparam arrowColor black
+
+|Admin atau Sistem|
+start
+:Meminta aktivasi, perubahan paket,\nsuspend, reaktivasi, atau test router;
+
+|Aplikasi Backend|
+:Mengambil data Router\ndan Profile pelanggan;
+:Memeriksa mode simulasi router;
+
+if (Mode simulasi?) then (Ya)
+  |PostgreSQL|
+  :Memperbarui data Profile\nsebagai simulasi status PPP;
+else (Tidak)
+  |MikroTik API|
+  :Membuka koneksi RouterOS API;
+  :Menjalankan operasi\n/ppp/secret add, set,\ndisable, atau enable;
+  :Menutup koneksi RouterOS API;
+endif
+
+|Aplikasi Backend|
+:Mengembalikan hasil operasi\nke sistem;
+
+|Admin|
+:Membuka fitur terminal router;
+
+|Socket.io dan SSH|
+:Membuka koneksi Socket.io\nnamespace /terminal;
+:Membuka sesi SSH\nke router MikroTik;
+:Meneruskan input dan output\nterminal secara realtime;
+
+|MikroTik Router|
+:Menjalankan perintah SSH\ndan mengirimkan output;
+
+|Admin|
+:Melihat output terminal router;
+stop
+@enduml

@@ -1,0 +1,63 @@
+@startuml
+title Analisis Penggunaan Midtrans
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 8
+}
+skinparam partition {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+skinparam arrowColor black
+
+|Pelanggan|
+start
+:Memilih pembayaran\npendaftaran layanan;
+
+|Aplikasi Backend|
+:Menerima request\npembuatan token pembayaran;
+:Mengambil data order\ndan data pelanggan;
+if (Order disetujui admin?) then (Ya)
+  :Menyusun parameter transaksi\norder, total, item paket,\ndan callback URL;
+else (Tidak)
+  :Menolak pembuatan\npembayaran;
+  |Pelanggan|
+  :Menerima pesan bahwa\norder belum dapat dibayar;
+  stop
+endif
+
+|Midtrans|
+:Memproses request Snap API;
+:Menghasilkan snap token\ndan redirect URL;
+
+|Aplikasi Backend|
+:Menyimpan snap token,\nMidtrans order id,\ndan redirect URL;
+
+|Pelanggan|
+:Membuka halaman pembayaran\nMidtrans;
+:Memilih metode pembayaran\ndan menyelesaikan pembayaran;
+
+|Midtrans|
+:Mengirim notifikasi transaksi\nke callback sistem;
+
+|Aplikasi Backend|
+:Memverifikasi signature\nnotifikasi Midtrans;
+if (Pembayaran berhasil?) then (Ya)
+  :Mengubah status order\nmenjadi SURVEY_SCHEDULED;
+  :Menandai tiket dan tagihan\nsebagai terbayar;
+  :Mencatat riwayat paket aktif;
+else (Tidak)
+  :Mempertahankan order\npada status review approved;
+endif
+
+|Pelanggan|
+:Melihat status pembayaran;
+stop
+@enduml

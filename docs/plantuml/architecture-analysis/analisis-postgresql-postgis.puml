@@ -1,0 +1,54 @@
+@startuml
+title Analisis Penggunaan PostgreSQL dan PostGIS
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 8
+}
+skinparam partition {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+skinparam arrowColor black
+
+|Admin|
+start
+:Menginput data area layanan;
+
+|Aplikasi Backend|
+:Memvalidasi provinsi, kota,\nkecamatan, kelurahan,\nradius, latitude, longitude;
+
+|PostgreSQL dan PostGIS|
+:Menyimpan data area pada\nCoveredArea;
+:Membentuk titik pusat area\nmenggunakan ST_SetSRID\nST_MakePoint;
+
+|Pelanggan|
+:Mengirim alamat dan lokasi\nuntuk cek area layanan;
+
+|Aplikasi Backend|
+:Memvalidasi data lokasi pelanggan;
+
+|PostgreSQL dan PostGIS|
+:Mencari area terdekat\nmenggunakan ST_DWithin;
+:Menghitung jarak lokasi\nmenggunakan ST_Distance;
+
+|Aplikasi Backend|
+if (Area tercakup?) then (Ya)
+  :Mengembalikan status\narea tersedia;
+else (Tidak)
+  :Mengembalikan status\narea belum tersedia;
+endif
+
+|PostgreSQL dan PostGIS|
+:Menyimpan riwayat pengecekan\npada CoverageCheckHistory;
+
+|Pelanggan|
+:Menerima hasil pengecekan area;
+stop
+@enduml

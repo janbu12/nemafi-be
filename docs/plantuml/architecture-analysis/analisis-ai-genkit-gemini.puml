@@ -1,0 +1,52 @@
+@startuml
+title Analisis Penggunaan AI (Genkit dan Gemini)
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 8
+}
+skinparam partition {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+skinparam arrowColor black
+
+|Pelanggan|
+start
+:Mengisi deskripsi kebutuhan\ninternet;
+
+|Aplikasi Backend|
+:Menerima request rekomendasi\npaket internet;
+:Memvalidasi deskripsi kebutuhan;
+
+|PostgreSQL|
+:Mengambil daftar paket\ninternet yang tersedia;
+
+|Aplikasi Backend|
+:Menyusun prompt berisi\ndaftar paket dan kebutuhan\npelanggan;
+:Mengambil konfigurasi\nGEMINI_API_KEY dan GEMINI_MODEL;
+
+|Gemini|
+:Menganalisis kebutuhan pelanggan;
+:Memilih satu paket paling sesuai;
+:Mengembalikan JSON berisi\npackageId dan pesan rekomendasi;
+
+|Aplikasi Backend|
+:Membersihkan respons JSON;
+:Memvalidasi packageId hasil AI\nke tabel Package;
+if (Paket ditemukan?) then (Ya)
+  :Mengembalikan paket rekomendasi\ndan pesan rekomendasi;
+else (Tidak)
+  :Mengembalikan pesan gagal\nvalidasi rekomendasi;
+endif
+
+|Pelanggan|
+:Melihat rekomendasi paket;
+stop
+@enduml
