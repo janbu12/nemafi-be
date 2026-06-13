@@ -1,0 +1,55 @@
+@startuml
+title Perancangan Struktur Menu Pelanggan
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam rectangle {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam linetype ortho
+top to bottom direction
+
+rectangle "Struktur Menu Pelanggan\nAplikasi Web Manajemen Pelanggan\ndan Otomatisasi Layanan Internet" as Title
+
+rectangle "Landing Page" as Landing
+rectangle "Login" as Login
+rectangle "Register" as Register
+rectangle "Lupa Password" as Forgot
+
+rectangle "Cek Area Layanan" as Coverage
+rectangle "Pilih Paket" as SelectPackage
+rectangle "Lengkapi Profil" as CompleteProfile
+rectangle "Pendaftaran Layanan" as Registration
+
+rectangle "Dashboard Pelanggan" as Dashboard
+rectangle "Tagihan & Pembayaran" as Billing
+rectangle "Dukungan" as Support
+rectangle "Buat Tiket Gangguan" as CreateTicket
+rectangle "Riwayat Tiket" as TicketHistory
+rectangle "Profil" as Profile
+rectangle "Logout" as Logout
+
+Title --> Landing
+Landing --> Login
+Landing --> Register
+
+Login --> Forgot
+Login --> Dashboard
+
+Register --> Coverage
+Coverage --> SelectPackage
+SelectPackage --> CompleteProfile
+CompleteProfile --> Registration
+Registration --> Login
+
+Dashboard --> Billing
+Dashboard --> Support
+Support --> CreateTicket
+Support --> TicketHistory
+Dashboard --> Profile
+Profile --> Logout
+@enduml

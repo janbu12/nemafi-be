@@ -1,0 +1,83 @@
+@startuml
+title Perancangan Struktur Menu Admin
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam rectangle {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam linetype ortho
+top to bottom direction
+
+rectangle "Struktur Menu Admin\nAplikasi Web Manajemen Pelanggan\ndan Otomatisasi Layanan Internet" as Title
+
+rectangle "Login" as Login
+rectangle "Lupa Password" as Forgot
+rectangle "Dashboard Admin" as Dashboard
+
+rectangle "Ringkasan" as Overview
+rectangle "Kelola Paket" as PackageMenu
+rectangle "Paket" as Package
+rectangle "Kategori Paket" as PackageCategory
+
+rectangle "Kelola Pelanggan" as Customer
+rectangle "Detail Pelanggan" as CustomerDetail
+rectangle "Kelola Teknisi" as Technician
+rectangle "Detail Teknisi" as TechnicianDetail
+
+rectangle "Kelola Tiket" as TicketMenu
+rectangle "Tiket" as Ticket
+rectangle "Kategori Tiket" as TicketCategory
+rectangle "Jadwalkan Tiket" as ScheduleTicket
+rectangle "Assign Teknisi" as AssignTechnician
+
+rectangle "Kelola Inventaris" as InventoryMenu
+rectangle "Inventaris" as Inventory
+rectangle "Kategori Inventaris" as InventoryCategory
+
+rectangle "Kelola Area Layanan" as AreaMenu
+rectangle "Area Layanan" as Area
+rectangle "Riwayat Cek Area" as AreaHistory
+
+rectangle "Transaksi & Tagihan" as Transaction
+rectangle "Router" as Router
+rectangle "Profil" as Profile
+rectangle "Logout" as Logout
+
+Title --> Login
+Login --> Forgot
+Login --> Dashboard
+
+Dashboard --> Overview
+Dashboard --> PackageMenu
+PackageMenu --> Package
+PackageMenu --> PackageCategory
+
+Dashboard --> Customer
+Customer --> CustomerDetail
+Dashboard --> Technician
+Technician --> TechnicianDetail
+
+Dashboard --> TicketMenu
+TicketMenu --> Ticket
+TicketMenu --> TicketCategory
+Ticket --> ScheduleTicket
+Ticket --> AssignTechnician
+
+Dashboard --> InventoryMenu
+InventoryMenu --> Inventory
+InventoryMenu --> InventoryCategory
+
+Dashboard --> AreaMenu
+AreaMenu --> Area
+AreaMenu --> AreaHistory
+
+Dashboard --> Transaction
+Dashboard --> Router
+Dashboard --> Profile
+Profile --> Logout
+@enduml

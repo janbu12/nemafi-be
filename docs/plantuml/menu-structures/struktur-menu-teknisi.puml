@@ -1,0 +1,51 @@
+@startuml
+title Perancangan Struktur Menu Teknisi
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam rectangle {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam linetype ortho
+top to bottom direction
+
+rectangle "Struktur Menu Teknisi\nAplikasi Web Manajemen Pelanggan\ndan Otomatisasi Layanan Internet" as Title
+
+rectangle "Login" as Login
+rectangle "Lupa Password" as Forgot
+rectangle "Dashboard Teknisi" as Dashboard
+
+rectangle "Tiket Ditugaskan" as AssignedTicket
+rectangle "Detail Tiket" as TicketDetail
+rectangle "Data Pelanggan" as CustomerData
+rectangle "Tim Teknisi" as TechnicianTeam
+rectangle "Update Status Tiket" as UpdateStatus
+rectangle "Laporan Pengerjaan" as Report
+rectangle "Lampiran Pekerjaan" as Attachment
+rectangle "Jadwal Kunjungan" as Schedule
+rectangle "Riwayat Pekerjaan" as History
+rectangle "Profil" as Profile
+rectangle "Logout" as Logout
+
+Title --> Login
+Login --> Forgot
+Login --> Dashboard
+
+Dashboard --> AssignedTicket
+AssignedTicket --> TicketDetail
+TicketDetail --> CustomerData
+TicketDetail --> TechnicianTeam
+TicketDetail --> UpdateStatus
+TicketDetail --> Report
+Report --> Attachment
+
+Dashboard --> Schedule
+Schedule --> TicketDetail
+Dashboard --> History
+Dashboard --> Profile
+Profile --> Logout
+@enduml
