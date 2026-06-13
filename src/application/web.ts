@@ -9,13 +9,12 @@ import cron from 'node-cron';
 
 export const web = express();
 
-
 web.use(helmet());
 web.use(cors({
-  origin: ['https://nemafi.mzn.my.id', 'http://localhost:3000'], // Hanya izinkan frontend Anda
+  origin: process.env.FRONTEND_URL?.split(','),
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // Tambahkan ini jika Anda mengirimkan cookies atau token otorisasi
+  credentials: true
 }));
 web.use(express.json());
 
