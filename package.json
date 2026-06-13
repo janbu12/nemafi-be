@@ -40,6 +40,7 @@
     "@types/node": "^24.10.9",
     "@types/ssh2": "^1.15.5",
     "nodemon": "^3.1.10",
+    "plantuml-encoder": "^1.4.0",
     "prisma": "^6.14.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
