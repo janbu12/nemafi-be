@@ -11,7 +11,12 @@ export const web = express();
 
 
 web.use(helmet());
-web.use(cors());
+web.use(cors({
+  origin: ['https://nemafi.mzn.my.id', 'http://localhost:3000'], // Hanya izinkan frontend Anda
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Tambahkan ini jika Anda mengirimkan cookies atau token otorisasi
+}));
 web.use(express.json());
 
 
