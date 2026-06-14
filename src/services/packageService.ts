@@ -1,6 +1,7 @@
 import { prismaClient } from '../application/prisma.js';
 import { createPackageValidation, updatePackageValidation } from '../validation/packageValidation.js';
 import { Prisma } from '@prisma/client';
+import mikrotikService from './mikrotikService.js';
 
 async function createPackage(data: {
   name: string;
@@ -13,7 +14,9 @@ async function createPackage(data: {
   metadata?: Prisma.JsonObject;
 }) {
   const validatedData = createPackageValidation.parse(data);
-  return prismaClient.package.create({ data: validatedData });
+  const pkg = await prismaClient.package.create({ data: validatedData });
+  await mikrotikService.syncPackageToAllRouters(pkg);
+  return pkg;
 }
 
 async function getAllPackages() {
@@ -38,14 +41,45 @@ async function updatePackage(
   }
 ) {
   const validatedData = updatePackageValidation.parse(data);
-  return prismaClient.package.update({
+  const pkg = await prismaClient.package.update({
     where: { id },
     data: validatedData,
   });
+  await mikrotikService.syncPackageToAllRouters(pkg);
+  return pkg;
 }
 
 async function deletePackage(id: number) {
-  return prismaClient.package.delete({ where: { id } });
+  const pkg = await prismaClient.package.findUnique({ where: { id } });
+  if (!pkg) {
+    throw { status: 404, message: 'Paket tidak ditemukan.' };
+  }
+
+  // Check if there are active customers using this package's profile
+  const activeUser = await prismaClient.profile.findFirst({
+    where: { pppProfile: pkg.name },
+  });
+  if (activeUser) {
+    throw {
+      status: 400,
+      message: 'Tidak dapat menghapus paket karena masih ada pelanggan aktif yang menggunakan paket ini.',
+    };
+  }
+
+  // Check if there are active subscriptions in packageHistory
+  const activeSub = await prismaClient.packageHistory.findFirst({
+    where: { packageId: id, endedAt: null },
+  });
+  if (activeSub) {
+    throw {
+      status: 400,
+      message: 'Tidak dapat menghapus paket karena masih ada pelanggan aktif yang menggunakan paket ini.',
+    };
+  }
+
+  const result = await prismaClient.package.delete({ where: { id } });
+  await mikrotikService.deletePackageFromAllRouters(pkg.name);
+  return result;
 }
 
 export default {

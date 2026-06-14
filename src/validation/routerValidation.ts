@@ -8,6 +8,8 @@ export const createRouterValidation = z.object({
   port: z.number().int().positive().optional(), // deprecated
   portApi: z.number().int().positive().default(8728),
   portSsh: z.number().int().positive().default(22),
+  pppLocalAddress: z.string().optional(),
+  pppRemoteAddress: z.string().optional(),
 });
 
 export const updateRouterValidation = z.object({
@@ -18,4 +20,6 @@ export const updateRouterValidation = z.object({
   port: z.number().int().positive().optional(), // deprecated
   portApi: z.number().int().positive().optional(),
   portSsh: z.number().int().positive().optional(),
+  pppLocalAddress: z.string().optional(),
+  pppRemoteAddress: z.string().optional(),
 });

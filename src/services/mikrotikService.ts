@@ -220,9 +220,127 @@ async function testConnection(routerId: number) {
    if (isSimulation(router)) {
     return { success: true, message: 'Simulation connection successful.' };
    }
-   return await withRouterApi(routerId, async () => ({ success: true, message: 'Connection successful.' }));
+    return await withRouterApi(routerId, async () => ({ success: true, message: 'Connection successful.' }));
   } catch (err: any) {
     throw { status: 500, message: `Failed to connect to router: ${err.message}` };
+  }
+}
+
+function formatSpeed(speedMbps: number): string {
+  if (speedMbps <= 0) return '0';
+  if (Number.isInteger(speedMbps)) {
+    return `${speedMbps}M`;
+  }
+  return `${Math.round(speedMbps * 1000)}k`;
+}
+
+function generateRateLimitString(uploadSpeed: number, downloadSpeed: number): string {
+  if (uploadSpeed <= 0 && downloadSpeed <= 0) return '';
+  return `${formatSpeed(uploadSpeed)}/${formatSpeed(downloadSpeed)}`;
+}
+
+async function syncPackageToRouter(
+  routerId: number,
+  pkg: { name: string; uploadSpeed: number; downloadSpeed: number }
+) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    return;
+  }
+
+  const rateLimit = generateRateLimitString(pkg.uploadSpeed, pkg.downloadSpeed);
+  const localAddress = router.pppLocalAddress || process.env.MIKROTIK_DEFAULT_PPP_LOCAL_ADDRESS || '172.16.0.1';
+  const remoteAddress = router.pppRemoteAddress || process.env.MIKROTIK_DEFAULT_PPP_REMOTE_ADDRESS || 'pppoe-pool';
+
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const profiles = await api.send(['/ppp/profile/print', `?name=${pkg.name}`]);
+    const existingProfile = profiles[0] ?? null;
+
+    if (!existingProfile) {
+      const command = [
+        '/ppp/profile/add',
+        `=name=${pkg.name}`,
+        `=local-address=${localAddress}`,
+        `=remote-address=${remoteAddress}`,
+      ];
+      if (rateLimit) {
+        command.push(`=rate-limit=${rateLimit}`);
+      }
+      await api.send(command);
+    } else {
+      const profileId = getRouterOSId(existingProfile);
+      const command = [
+        '/ppp/profile/set',
+        `=.id=${profileId}`,
+        `=local-address=${localAddress}`,
+        `=remote-address=${remoteAddress}`,
+      ];
+      if (rateLimit) {
+        command.push(`=rate-limit=${rateLimit}`);
+      } else {
+        command.push('=rate-limit=');
+      }
+      await api.send(command);
+    }
+  });
+}
+
+async function deletePackageFromRouter(routerId: number, packageName: string) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    return;
+  }
+
+  return withRouterApi(routerId, async (api: RouterOSApi) => {
+    const profiles = await api.send(['/ppp/profile/print', `?name=${packageName}`]);
+    const existingProfile = profiles[0] ?? null;
+    if (existingProfile) {
+      const profileId = getRouterOSId(existingProfile);
+      await api.send(['/ppp/profile/remove', `=.id=${profileId}`]);
+    }
+  });
+}
+
+async function syncPackageToAllRouters(pkg: { name: string; uploadSpeed: number; downloadSpeed: number }) {
+  const routers = await prismaClient.router.findMany();
+  for (const router of routers) {
+    if (isSimulation(router)) {
+      continue;
+    }
+    try {
+      await syncPackageToRouter(router.id, pkg);
+    } catch (err: any) {
+      console.warn(`[Mikrotik Sync Warning] Failed to sync package '${pkg.name}' to router '${router.name}' (ID: ${router.id}): ${err.message}`);
+    }
+  }
+}
+
+async function deletePackageFromAllRouters(packageName: string) {
+  const routers = await prismaClient.router.findMany();
+  for (const router of routers) {
+    if (isSimulation(router)) {
+      continue;
+    }
+    try {
+      await deletePackageFromRouter(router.id, packageName);
+    } catch (err: any) {
+      console.warn(`[Mikrotik Sync Warning] Failed to delete package profile '${packageName}' from router '${router.name}' (ID: ${router.id}): ${err.message}`);
+    }
+  }
+}
+
+async function syncAllPackagesToRouter(routerId: number) {
+  const router = await getRouter(routerId);
+  if (isSimulation(router)) {
+    return;
+  }
+  const packages = await prismaClient.package.findMany();
+  for (const pkg of packages) {
+    try {
+      await syncPackageToRouter(routerId, pkg);
+    } catch (err: any) {
+      console.warn(`[Mikrotik Sync Warning] Failed to sync package '${pkg.name}' to router '${router.name}' (ID: ${router.id}): ${err.message}`);
+    }
   }
 }
 
@@ -234,4 +352,7 @@ export default {
   getActiveUsers,
   testConnection,
   createPppSecret,
+  syncPackageToAllRouters,
+  deletePackageFromAllRouters,
+  syncAllPackagesToRouter,
 };

@@ -1,9 +1,16 @@
 import { prismaClient } from "../application/prisma.js";
 import { createRouterValidation, updateRouterValidation } from "../validation/routerValidation.js";
+import mikrotikService from "./mikrotikService.js";
 
 async function create(data: any) {
     const validatedData = createRouterValidation.parse(data);
-    return prismaClient.router.create({ data: validatedData });
+    const router = await prismaClient.router.create({ data: validatedData });
+    try {
+        await mikrotikService.syncAllPackagesToRouter(router.id);
+    } catch (err: any) {
+        console.warn(`[Router Create Warning] Failed to sync packages to new router '${router.name}': ${err.message}`);
+    }
+    return router;
 }
 
 async function getAll() {
