@@ -344,6 +344,43 @@ async function syncAllPackagesToRouter(routerId: number) {
   }
 }
 
+async function syncAllPackagesToAllRouters() {
+  const routers = await prismaClient.router.findMany();
+  const packages = await prismaClient.package.findMany();
+
+  let successCount = 0;
+  let failureCount = 0;
+  const errors: string[] = [];
+
+  for (const router of routers) {
+    if (isSimulation(router)) {
+      continue;
+    }
+    // Test connection first to avoid long timeouts
+    try {
+      await withRouterApi(router.id, async (api: RouterOSApi) => {
+        await api.send(['/system/identity/print']);
+      });
+    } catch (err: any) {
+      failureCount += packages.length;
+      errors.push(`Router '${router.name}' tidak dapat terhubung: ${err.message}`);
+      continue;
+    }
+
+    for (const pkg of packages) {
+      try {
+        await syncPackageToRouter(router.id, pkg);
+        successCount++;
+      } catch (err: any) {
+        failureCount++;
+        errors.push(`Router '${router.name}', Paket '${pkg.name}': ${err.message}`);
+      }
+    }
+  }
+
+  return { successCount, failureCount, errors };
+}
+
 export default {
   addPppSecret,
   updatePppProfile,
@@ -355,4 +392,5 @@ export default {
   syncPackageToAllRouters,
   deletePackageFromAllRouters,
   syncAllPackagesToRouter,
+  syncAllPackagesToAllRouters,
 };

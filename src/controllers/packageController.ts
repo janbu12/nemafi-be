@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import packageService from '../services/packageService.js';
+import mikrotikService from '../services/mikrotikService.js';
 import { success } from '../utils/responseHandler.js';
 
 async function create(req: Request, res: Response, next: NextFunction) {
@@ -51,4 +52,13 @@ async function remove(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export default { create, getAll, getById, update, remove };
+async function syncAll(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await mikrotikService.syncAllPackagesToAllRouters();
+    return success(res, result, 'Sinkronisasi paket ke semua router selesai');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default { create, getAll, getById, update, remove, syncAll };

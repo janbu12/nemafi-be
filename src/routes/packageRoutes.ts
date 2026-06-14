@@ -12,6 +12,7 @@ router.get('/:id', packageController.getById);
 
 // Admin-only write
 router.use(authMiddleware, roleMiddleware([Role.TECH_ADMIN]));
+router.post('/sync', packageController.syncAll);
 router.post('/', packageController.create);
 router.put('/:id', packageController.update);
 router.delete('/:id', packageController.remove);
