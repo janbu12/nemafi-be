@@ -354,6 +354,11 @@ model Router {
   portApi   Int       @default(8728)
   portSsh   Int       @default(22)
   profiles  Profile[]
+  
+  // -- Kolom baru untuk default PPP Profile --
+  pppLocalAddress  String?
+  pppRemoteAddress String?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }

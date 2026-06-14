@@ -268,6 +268,8 @@ async function main() {
       password: 'simulator',
       portApi: 8728,
       portSsh: 22,
+      pppLocalAddress: '172.16.0.1',
+      pppRemoteAddress: 'pppoe-pool',
     },
   });
 
