@@ -79,61 +79,224 @@ async function main() {
   });
 
   // Seed Categories
-  const residential = await prisma.categoryPackage.create({
-    data: { name: 'Residential' },
+  const catUpToNew = await prisma.categoryPackage.create({
+    data: { name: 'UP TO NEW' },
   });
 
-  const business = await prisma.categoryPackage.create({
-    data: { name: 'Business' },
+  const catSoho = await prisma.categoryPackage.create({
+    data: { name: 'SMALL OFFICE HOME OFFICE' },
   });
 
-  const soho = await prisma.categoryPackage.create({
-    data: { name: 'SOHO' },
+  const catCorporate = await prisma.categoryPackage.create({
+    data: { name: 'CORPORATE' },
+  });
+
+  const catLastmile = await prisma.categoryPackage.create({
+    data: { name: 'LASTMILE' },
+  });
+
+  const catBroadbandNew = await prisma.categoryPackage.create({
+    data: { name: 'BROADBAND NEW' },
+  });
+
+  const catBroadband = await prisma.categoryPackage.create({
+    data: { name: 'BROADBAND' },
+  });
+
+  const catBod = await prisma.categoryPackage.create({
+    data: { name: 'BOD' },
   });
 
   // Seed Packages
   const packages = [
-    // Residential Packages
     {
-      name: 'Home Basic',
-      price: 250000,
-      description: 'Paket internet cepat untuk kebutuhan rumah tangga.',
-      categoryId: residential.id,
+      name: 'UP TO NEW 15 Mbps',
+      price: 165000,
+      description: 'Paket UP TO NEW dengan kecepatan unduh/unggah 15 Mbps.',
+      categoryId: catUpToNew.id,
+      downloadSpeed: 15.0,
+      uploadSpeed: 15.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'UP TO NEW 20 Mbps',
+      price: 200000,
+      description: 'Paket UP TO NEW dengan kecepatan unduh/unggah 20 Mbps.',
+      categoryId: catUpToNew.id,
       downloadSpeed: 20.0,
-      uploadSpeed: 5.0,
+      uploadSpeed: 20.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'UP TO NEW 25 Mbps',
+      price: 225000,
+      description: 'Paket UP TO NEW dengan kecepatan unduh/unggah 25 Mbps.',
+      categoryId: catUpToNew.id,
+      downloadSpeed: 25.0,
+      uploadSpeed: 25.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'UP TO NEW 30 Mbps',
+      price: 250000,
+      description: 'Paket UP TO NEW dengan kecepatan unduh/unggah 30 Mbps.',
+      categoryId: catUpToNew.id,
+      downloadSpeed: 30.0,
+      uploadSpeed: 30.0,
       isPopular: true,
       metadata: { unlimited_quota: true },
     },
     {
-      name: 'Home Premium',
-      price: 400000,
-      description: 'Internet super cepat untuk streaming dan gaming.',
-      categoryId: residential.id,
-      downloadSpeed: 100.0,
+      name: 'UP TO NEW 35 Mbps',
+      price: 300000,
+      description: 'Paket UP TO NEW dengan kecepatan unduh/unggah 35 Mbps.',
+      categoryId: catUpToNew.id,
+      downloadSpeed: 35.0,
+      uploadSpeed: 35.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'SOHO 10 Mbps',
+      price: 499000,
+      description: 'Paket SOHO dengan kecepatan unduh/unggah 10 Mbps.',
+      categoryId: catSoho.id,
+      downloadSpeed: 10.0,
+      uploadSpeed: 10.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true, static_ip: true },
+    },
+    {
+      name: 'SOHO 20 Mbps',
+      price: 599000,
+      description: 'Paket SOHO dengan kecepatan unduh/unggah 20 Mbps.',
+      categoryId: catSoho.id,
+      downloadSpeed: 20.0,
       uploadSpeed: 20.0,
       isPopular: true,
-      metadata: { unlimited_quota: true, free_iptv: true },
+      metadata: { unlimited_quota: true, static_ip: true },
     },
-    // Business Packages
     {
-      name: 'Business Starter',
-      price: 600000,
-      description: 'Koneksi internet stabil untuk bisnis Anda.',
-      categoryId: business.id,
-      downloadSpeed: 150.0,
+      name: 'SOHO 30 Mbps',
+      price: 699000,
+      description: 'Paket SOHO dengan kecepatan unduh/unggah 30 Mbps.',
+      categoryId: catSoho.id,
+      downloadSpeed: 30.0,
+      uploadSpeed: 30.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true, static_ip: true },
+    },
+    {
+      name: 'SOHO 50 Mbps',
+      price: 899000,
+      description: 'Paket SOHO dengan kecepatan unduh/unggah 50 Mbps.',
+      categoryId: catSoho.id,
+      downloadSpeed: 50.0,
       uploadSpeed: 50.0,
-      isPopular: true,
-      metadata: { dedicated_support: true, static_ip: true },
+      isPopular: false,
+      metadata: { unlimited_quota: true, static_ip: true },
     },
-    // SOHO Packages
     {
-      name: 'SOHO Power',
-      price: 500000,
-      description: 'Solusi internet untuk Small Office Home Office.',
-      categoryId: soho.id,
-      downloadSpeed: 100,
-      uploadSpeed: 25,
+      name: 'CORPORATE 30 Mbps',
+      price: 750000,
+      description: 'Paket Corporate dengan kecepatan unduh/unggah 30 Mbps.',
+      categoryId: catCorporate.id,
+      downloadSpeed: 30.0,
+      uploadSpeed: 30.0,
+      isPopular: false,
+      metadata: { dedicated_support: true, SLA: '99.9%', static_ip: true },
+    },
+    {
+      name: 'CORPORATE 50 Mbps',
+      price: 4800000,
+      description: 'Paket Corporate premium dengan kecepatan unduh/unggah 50 Mbps.',
+      categoryId: catCorporate.id,
+      downloadSpeed: 50.0,
+      uploadSpeed: 50.0,
+      isPopular: false,
+      metadata: { dedicated_support: true, SLA: '99.9%', static_ip: true },
+    },
+    {
+      name: 'LASTMILE 50 Mbps',
+      price: 950000,
+      description: 'Paket Lastmile dengan kecepatan unduh/unggah 50 Mbps.',
+      categoryId: catLastmile.id,
+      downloadSpeed: 50.0,
+      uploadSpeed: 50.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND NEW 10 Mbps',
+      price: 150000,
+      description: 'Paket Broadband New dengan kecepatan unduh/unggah 10 Mbps.',
+      categoryId: catBroadbandNew.id,
+      downloadSpeed: 10.0,
+      uploadSpeed: 10.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND NEW 15 Mbps',
+      price: 200000,
+      description: 'Paket Broadband New dengan kecepatan unduh/unggah 15 Mbps.',
+      categoryId: catBroadbandNew.id,
+      downloadSpeed: 15.0,
+      uploadSpeed: 15.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND NEW 20 Mbps',
+      price: 225000,
+      description: 'Paket Broadband New dengan kecepatan unduh/unggah 20 Mbps.',
+      categoryId: catBroadbandNew.id,
+      downloadSpeed: 20.0,
+      uploadSpeed: 20.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND NEW 30 Mbps',
+      price: 300000,
+      description: 'Paket Broadband New dengan kecepatan unduh/unggah 30 Mbps.',
+      categoryId: catBroadbandNew.id,
+      downloadSpeed: 30.0,
+      uploadSpeed: 30.0,
       isPopular: true,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND 10 Mbps',
+      price: 200000,
+      description: 'Paket Broadband dengan kecepatan unduh/unggah 10 Mbps.',
+      categoryId: catBroadband.id,
+      downloadSpeed: 10.0,
+      uploadSpeed: 10.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BROADBAND 20 Mbps',
+      price: 250000,
+      description: 'Paket Broadband dengan kecepatan unduh/unggah 20 Mbps.',
+      categoryId: catBroadband.id,
+      downloadSpeed: 20.0,
+      uploadSpeed: 20.0,
+      isPopular: false,
+      metadata: { unlimited_quota: true },
+    },
+    {
+      name: 'BANDWIDTH ON DEMAND 50 Mbps',
+      price: 500000,
+      description: 'Paket Bandwidth On Demand dengan kecepatan unduh/unggah 50 Mbps.',
+      categoryId: catBod.id,
+      downloadSpeed: 50.0,
+      uploadSpeed: 50.0,
+      isPopular: false,
       metadata: { unlimited_quota: true },
     },
   ];
@@ -288,7 +451,7 @@ async function main() {
       subdistrict: 'Cisaranten Kulon',
       latitude: -6.9152,
       longitude: 107.6761,
-      packageName: 'Home Premium',
+      packageName: 'BROADBAND NEW 30 Mbps',
       active: false,
       overdue: true,
     },
@@ -303,7 +466,7 @@ async function main() {
       subdistrict: 'Pasteur',
       latitude: -6.8899,
       longitude: 107.5982,
-      packageName: 'Home Basic',
+      packageName: 'UP TO NEW 30 Mbps',
       active: false,
       overdue: true,
     },
@@ -318,7 +481,7 @@ async function main() {
       subdistrict: 'Ciumbuleuit',
       latitude: -6.8727,
       longitude: 107.6071,
-      packageName: 'SOHO Power',
+      packageName: 'SOHO 10 Mbps',
       active: true,
       overdue: false,
     },
@@ -333,7 +496,7 @@ async function main() {
       subdistrict: 'Dago',
       latitude: -6.8894,
       longitude: 107.6178,
-      packageName: 'Business Starter',
+      packageName: 'SOHO 20 Mbps',
       active: true,
       overdue: false,
     },
@@ -348,7 +511,7 @@ async function main() {
       subdistrict: 'Cisaranten Kulon',
       latitude: -6.9181,
       longitude: 107.6704,
-      packageName: 'Home Basic',
+      packageName: 'UP TO NEW 30 Mbps',
       active: false,
       overdue: true,
     },
@@ -632,7 +795,7 @@ async function main() {
   const realNow = new Date();
   const daysFromNow = (days: number) => new Date(realNow.getTime() + days * 24 * 60 * 60 * 1000);
 
-  const cronPackage = packageByName('Home Premium');
+  const cronPackage = packageByName('BROADBAND NEW 30 Mbps');
 
   // Auto renew test: last invoice PAID and period already ended
   const renewUser = await prisma.user.create({
@@ -658,7 +821,7 @@ async function main() {
       routerId: router.id,
       pppUsername: `ppp-${renewUser.id}`,
       pppPassword: `ppp-${renewUser.id}-pass`,
-      pppProfile: cronPackage?.name || 'Home Premium',
+      pppProfile: cronPackage?.name || 'BROADBAND NEW 30 Mbps',
       isPppActive: true,
     },
   });
@@ -719,7 +882,7 @@ async function main() {
       routerId: router.id,
       pppUsername: `ppp-${suspendUser.id}`,
       pppPassword: `ppp-${suspendUser.id}-pass`,
-      pppProfile: cronPackage?.name || 'Home Premium',
+      pppProfile: cronPackage?.name || 'BROADBAND NEW 30 Mbps',
       isPppActive: true,
     },
   });
