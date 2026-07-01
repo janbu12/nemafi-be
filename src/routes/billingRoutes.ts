@@ -10,3 +10,4 @@ billingRoutes.use(authMiddleware);
 billingRoutes.post('/billing/pay-latest', billingController.payLatest);
 billingRoutes.get('/billing/invoices', roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN]), billingController.listInvoices);
 billingRoutes.get('/billing/invoices/:id', roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN]), billingController.getInvoiceDetail);
+billingRoutes.put('/billing/invoices/:id/status', roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN]), billingController.updateInvoiceStatus);

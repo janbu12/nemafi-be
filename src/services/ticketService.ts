@@ -2,6 +2,7 @@ import { prismaClient } from '../application/prisma.js';
 import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, supportTicketValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
 import { emitTicketAssignmentUpdated, emitTicketMembersUpdated, emitTicketUpdated } from '../application/socket.js';
 import { Prisma, Role, User } from '@prisma/client';
+import mikrotikService from './mikrotikService.js';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
 
@@ -64,35 +65,40 @@ async function provisionPppProfileFromTicket(
   if (!ticket || ticket.category?.name !== 'instalasi') return;
   const profile = ticket.order.user.profile;
   if (!profile) return;
-  if (profile.pppUsername && profile.pppPassword && profile.pppProfile) {
-    await client.profile.update({
-      where: { id: profile.id },
-      data: { isPppActive: true },
-    });
-    return;
-  }
 
   const pkg = ticket.order.items[0]?.package;
   const pppUsername = profile.pppUsername || `ppp-${ticket.order.user.id}`;
   const pppPassword = profile.pppPassword || `ppp-${ticket.order.user.id}-pass`;
+  const pppProfile = profile.pppProfile || pkg?.name || 'Default';
 
-  await client.profile.update({
+  // Update profile status in database first
+  const updatedProfile = await client.profile.update({
     where: { id: profile.id },
     data: {
       pppUsername,
       pppPassword,
-      pppProfile: profile.pppProfile || pkg?.name || 'Default',
+      pppProfile,
       isPppActive: true,
     },
+    include: { router: true },
   });
 
   await addHistory(
     ticket.id,
     'PPPoE activated',
-    `PPPoE ${pppUsername} aktif dengan profil ${pkg?.name || 'Default'}`,
+    `PPPoE ${pppUsername} aktif dengan profil ${pppProfile}`,
     undefined,
     client
   );
+
+  // Sync to MikroTik router
+  if (updatedProfile.routerId && updatedProfile.router) {
+    try {
+      await mikrotikService.addPppSecret(updatedProfile as any);
+    } catch (err: any) {
+      console.warn(`[Mikrotik Activation Warning] Failed to activate on router: ${err.message}`);
+    }
+  }
 }
 
 async function ensureTicketExpiry(ticket: {

@@ -56,6 +56,13 @@ async function markLatestInvoicePaid(userId: number) {
       where: { id: profile.id },
       data: { isPppActive: true },
     });
+    if (profile.pppUsername && profile.routerId) {
+      try {
+        await mikrotikService.enablePppSecret(profile.pppUsername, profile.routerId);
+      } catch (err: any) {
+        console.warn(`[Mikrotik Reactivate Warning] Failed to reactivate PPP secret on router: ${err.message}`);
+      }
+    }
   }
 
   const lastSuspension = await prismaClient.suspensionHistory.findFirst({
@@ -192,6 +199,13 @@ async function applyOverdueSuspension(graceDays = 3) {
         where: { id: profile.id },
         data: { isPppActive: false },
       });
+      if (profile.pppUsername && profile.routerId) {
+        try {
+          await mikrotikService.disablePppSecret(profile.pppUsername, profile.routerId);
+        } catch (err: any) {
+          console.warn(`[Mikrotik Suspend Warning] Failed to suspend PPP secret on router: ${err.message}`);
+        }
+      }
     }
 
     const openSuspension = await prismaClient.suspensionHistory.findFirst({
@@ -407,6 +421,100 @@ async function changeUserPackage(userId: number, packageId: number) {
   return { mode: 'berikutnya', package: pkg, effectiveAt: scheduledAt };
 }
 
+async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVERDUE') {
+  const invoice = await prismaClient.billingInvoice.findUnique({
+    where: { id },
+    include: { user: { include: { profile: true } } },
+  });
+  if (!invoice) return null;
+
+  const now = new Date();
+  const updatedInvoice = await prismaClient.billingInvoice.update({
+    where: { id },
+    data: {
+      status,
+      paidAt: status === 'PAID' ? now : null,
+    },
+  });
+
+  const userId = invoice.userId;
+  const profile = invoice.user?.profile;
+
+  if (profile) {
+    if (status === 'OVERDUE') {
+      await prismaClient.profile.update({
+        where: { id: profile.id },
+        data: { isPppActive: false },
+      });
+      if (profile.pppUsername && profile.routerId) {
+        try {
+          await mikrotikService.disablePppSecret(profile.pppUsername, profile.routerId);
+        } catch (err: any) {
+          console.warn(`[Mikrotik Suspend Warning] Failed to suspend PPP secret on router: ${err.message}`);
+        }
+      }
+      const openSuspension = await prismaClient.suspensionHistory.findFirst({
+        where: { userId, resumedAt: null },
+      });
+      if (!openSuspension) {
+        await prismaClient.suspensionHistory.create({
+          data: {
+            userId,
+            reason: 'Tagihan menunggak (diubah secara manual/simulasi oleh admin)',
+            suspendedAt: now,
+          },
+        });
+      }
+    } else if (status === 'PAID') {
+      await prismaClient.profile.update({
+        where: { id: profile.id },
+        data: { isPppActive: true },
+      });
+      if (profile.pppUsername && profile.routerId) {
+        try {
+          await mikrotikService.enablePppSecret(profile.pppUsername, profile.routerId);
+        } catch (err: any) {
+          console.warn(`[Mikrotik Reactivate Warning] Failed to reactivate PPP secret on router: ${err.message}`);
+        }
+      }
+      const openSuspension = await prismaClient.suspensionHistory.findFirst({
+        where: { userId, resumedAt: null },
+      });
+      if (openSuspension) {
+        await prismaClient.suspensionHistory.update({
+          where: { id: openSuspension.id },
+          data: { resumedAt: now },
+        });
+      }
+    } else if (status === 'UNPAID') {
+      await prismaClient.profile.update({
+        where: { id: profile.id },
+        data: { isPppActive: true },
+      });
+      if (profile.pppUsername && profile.routerId) {
+        try {
+          await mikrotikService.enablePppSecret(profile.pppUsername, profile.routerId);
+        } catch (err: any) {
+          console.warn(`[Mikrotik Reactivate Warning] Failed to reactivate PPP secret on router: ${err.message}`);
+        }
+      }
+      const openSuspension = await prismaClient.suspensionHistory.findFirst({
+        where: { userId, resumedAt: null },
+      });
+      if (openSuspension) {
+        await prismaClient.suspensionHistory.update({
+          where: { id: openSuspension.id },
+          data: { resumedAt: now },
+        });
+      }
+    }
+  }
+
+  emitBillingUpdated({ type: 'status_updated', invoiceIds: [id] });
+
+  return updatedInvoice;
+}
+
 export default {
   markLatestInvoicePaid,
   listInvoices,
@@ -416,4 +524,5 @@ export default {
   getBillingSettings,
   updateBillingSettings,
   changeUserPackage,
+  updateInvoiceStatus,
 };

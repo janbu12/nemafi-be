@@ -39,8 +39,24 @@ async function getInvoiceDetail(req: AuthRequest, res: Response, next: NextFunct
   }
 }
 
+async function updateInvoiceStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body;
+    if (!['PAID', 'UNPAID', 'OVERDUE'].includes(status)) {
+      return success(res, null, 'Status tidak valid', 400);
+    }
+    const invoice = await billingService.updateInvoiceStatus(id, status);
+    if (!invoice) return success(res, null, 'Invoice tidak ditemukan', 404);
+    return success(res, invoice, `Status invoice berhasil diubah menjadi ${status}`);
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
   payLatest,
   listInvoices,
   getInvoiceDetail,
+  updateInvoiceStatus,
 };

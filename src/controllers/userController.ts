@@ -84,11 +84,21 @@ async function changePackage(req: AuthRequest, res: Response, next: Function) {
     }
 }
 
+async function createCustomer(req: AuthRequest, res: Response, next: Function) {
+    try {
+        const created = await userService.createCustomer(req.user!, req.body);
+        return success(res, created, 'Customer created', 201);
+    } catch (e) {
+        next(e);
+    }
+}
+
 export default {
     listUsers,
     listTechnicians,
     getUser,
     createUser,
+    createCustomer,
     updateUser,
     deleteUser,
     resetPassword,
