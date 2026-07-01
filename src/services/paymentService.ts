@@ -115,10 +115,10 @@ async function verifyPaymentNotification(notificationBody: any) {
             transaction_id,
             transaction_status,
             gross_amount,
-            signature_key
+            signature_key,
+            status_code
         } = notificationBody;
 
-        const status_code = 200
         // Verify signature
         const { serverKey } = await getMidtransConfig();
         if (!serverKey) {
