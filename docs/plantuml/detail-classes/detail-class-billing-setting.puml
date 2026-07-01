@@ -2,6 +2,8 @@
 title Detail Class BillingSetting
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class BillingSetting {
@@ -12,11 +14,12 @@ class BillingSetting {
   - graceDays: Int
   - dueDays: Int
   - periodDays: Int
+  - createdAt: DateTime
+  - updatedAt: DateTime
   --
-  + ubahPengaturan()
-  + aktifkanOtomatisasi()
-  + nonaktifkanOtomatisasi()
-  + getPeriodeTagihan()
+  + getBillingSettings()
+  + updateBillingSettings()
+  + applyOverdueSuspension()
+  + generateMonthlyInvoices()
 }
-
 @enduml

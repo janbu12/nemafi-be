@@ -1,0 +1,32 @@
+@startuml
+title SKPL-F-18 Sequence Diagram Kelola Inventaris Perangkat
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":InventoryCategory" as InventoryCategory
+participant ":InventoryItem" as InventoryItem
+
+Admin -> InventoryCategory: getAllCategories()
+activate InventoryCategory
+InventoryCategory --> Admin: daftarKategoriInventaris
+deactivate InventoryCategory
+
+Admin -> InventoryItem: getAllItems()
+activate InventoryItem
+InventoryItem --> Admin: daftarInventaris
+deactivate InventoryItem
+
+alt tambah perangkat
+  Admin -> InventoryItem: createItem(dataItem)
+else ubah perangkat
+  Admin -> InventoryItem: updateItem(id, dataItem)
+else hapus perangkat
+  Admin -> InventoryItem: deleteItem(id)
+end
+
+InventoryItem --> Admin: dataInventarisTersimpan
+
+@enduml

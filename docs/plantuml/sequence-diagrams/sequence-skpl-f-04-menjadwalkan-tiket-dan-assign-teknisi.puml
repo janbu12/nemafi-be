@@ -1,0 +1,42 @@
+@startuml
+title SKPL-F-04 Sequence Diagram Menjadwalkan Tiket dan Assign Teknisi
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":Ticket" as Ticket
+participant ":TicketTechnicianMember" as TicketMember
+participant ":TicketHistory" as TicketHistory
+actor Teknisi
+actor Pelanggan
+
+Admin -> Ticket: getAllTickets()
+activate Ticket
+Ticket --> Admin: daftarTiket
+deactivate Ticket
+
+Admin -> Ticket: scheduleTicket(ticketId, scheduledAt)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+activate TicketHistory
+TicketHistory --> Ticket: riwayatJadwal
+deactivate TicketHistory
+Ticket --> Admin: tiketSCHEDULED
+deactivate Ticket
+
+Admin -> Ticket: assignTicket(ticketId, technicianId)
+activate Ticket
+Ticket -> TicketMember: assignTicket(ticketId, technicianId)
+activate TicketMember
+TicketMember --> Ticket: teknisiDitugaskan
+deactivate TicketMember
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+Ticket --> Admin: tiketTECHNICIAN_ASSIGNED
+deactivate Ticket
+
+Ticket -> Teknisi: notifikasi tiket ditugaskan
+Ticket -> Pelanggan: notifikasi jadwal kunjungan
+
+@enduml

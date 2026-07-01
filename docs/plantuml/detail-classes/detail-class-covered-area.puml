@@ -2,22 +2,28 @@
 title Detail Class CoveredArea
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class CoveredArea {
   - id: Int
-  - provinsi: String
-  - kota: String
-  - kecamatan: String
-  - kelurahan: String
-  - alamatLengkap: String
-  - radiusMeter: Int
-  - titikPusat: Point
+  - province: String
+  - city: String
+  - district: String
+  - village: String
+  - fullAddress: String
+  - radius_m: Int
+  - center: Geography
+  - createdAt: DateTime
   --
-  + tambahArea()
-  + ubahArea()
-  + hapusArea()
-  + cekCakupanLokasi()
+  + checkAvailability()
+  + checkAvailabilityNoHistory()
+  + addCoveredArea()
+  + updateCoveredArea()
+  + getAllCoveredAreas()
+  + deleteCoveredArea()
 }
 
+CoveredArea ..> CoverageCheckHistory
 @enduml

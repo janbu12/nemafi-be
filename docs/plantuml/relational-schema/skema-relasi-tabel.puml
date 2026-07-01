@@ -1,0 +1,291 @@
+@startuml
+title Skema Relasi Basis Data - Manajemen Pelanggan dan Otomatisasi Layanan Internet
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Times New Roman"
+skinparam classAttributeIconSize 0
+skinparam entity {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+}
+hide circle
+left to right direction
+
+entity "User" as User {
+  * id : int (NN) <<PK>>
+  --
+  nama : varchar(255)
+  email : varchar(255)
+  password : varchar(255)
+  role : Role
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "Profile" as Profile {
+  * id : int (NN) <<PK>>
+  --
+  pelangganId : int (NN) <<FK>>
+  nomorTelepon : varchar(255)
+  imageUrl : varchar(255)
+  alamatLengkap : varchar(255)
+  provinsi : varchar(255)
+  kota : varchar(255)
+  kecamatan : varchar(255)
+  kelurahan : varchar(255)
+  latitude : float
+  longitude : float
+  routerId : int <<FK>>
+  usernamePpp : varchar(255)
+  passwordPpp : varchar(255)
+  profilePpp : varchar(255)
+  isPppActive : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "CategoryPackage" as CategoryPackage {
+  * id : int (NN) <<PK>>
+  --
+  nama : varchar(255)
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "Package" as Package {
+  * id : int (NN) <<PK>>
+  --
+  categoryPackageId : int (NN) <<FK>>
+  nama : varchar(255)
+  harga : int
+  downloadSpeed : float
+  uploadSpeed : float
+  deskripsi : text
+  isPopular : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "Order" as OrderTable {
+  * id : int (NN) <<PK>>
+  --
+  pelangganId : int (NN) <<FK>>
+  packageId : int (NN) <<FK>>
+  status : OrderStatus
+  total : int
+  catatanReview : text
+  reviewedAt : datetime
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "PackageHistory" as PackageHistory {
+  * id : int (NN) <<PK>>
+  --
+  pelangganId : int (NN) <<FK>>
+  packageId : int (NN) <<FK>>
+  startedAt : datetime
+  endedAt : datetime
+  alasan : text
+  createdAt : datetime
+}
+
+entity "TicketCategory" as TicketCategory {
+  * id : int (NN) <<PK>>
+  --
+  nama : varchar(255)
+  requiresTechnician : boolean
+  isExpirable : boolean
+  expireHours : int
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "Ticket" as Ticket {
+  * id : int (NN) <<PK>>
+  --
+  orderId : int (NN) <<FK>>
+  ticketCategoryId : int (NN) <<FK>>
+  teknisiUtamaId : int <<FK>>
+  judul : varchar(255)
+  deskripsi : text
+  status : TicketStatus
+  scheduledAt : datetime
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "TicketTechnicianMember" as TicketTechnicianMember {
+  * id : int (NN) <<PK>>
+  --
+  ticketId : int (NN) <<FK>>
+  teknisiId : int (NN) <<FK>>
+  assignedAt : datetime
+}
+
+entity "TicketHistory" as TicketHistory {
+  * id : int (NN) <<PK>>
+  --
+  ticketId : int (NN) <<FK>>
+  actorId : int <<FK>>
+  actorType : TicketHistoryActor
+  aksi : varchar(255)
+  deskripsi : text
+  createdAt : datetime
+}
+
+entity "TicketAttachment" as TicketAttachment {
+  * id : int (NN) <<PK>>
+  --
+  ticketId : int (NN) <<FK>>
+  filename : varchar(255)
+  mimeType : varchar(255)
+  fileUrl : text
+  uploadedBy : int <<FK>>
+  createdAt : datetime
+}
+
+entity "TicketSurvey" as TicketSurvey {
+  * id : int (NN) <<PK>>
+  --
+  ticketId : int (NN) <<FK>>
+  installationTicketId : int <<FK>>
+  catatanSurvey : text
+  hasilSurvey : text
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "TicketSurveyItem" as TicketSurveyItem {
+  * id : int (NN) <<PK>>
+  --
+  ticketSurveyId : int (NN) <<FK>>
+  inventoryItemId : int (NN) <<FK>>
+  type : SurveyItemType
+  quantity : int
+  satuan : varchar(255)
+  catatan : text
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "InventoryCategory" as InventoryCategory {
+  * id : int (NN) <<PK>>
+  --
+  nama : varchar(255)
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "InventoryItem" as InventoryItem {
+  * id : int (NN) <<PK>>
+  --
+  inventoryCategoryId : int (NN) <<FK>>
+  nama : varchar(255)
+  stok : int
+  satuan : varchar(255)
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "CoveredArea" as CoveredArea {
+  * id : int (NN) <<PK>>
+  --
+  provinsi : varchar(255)
+  kota : varchar(255)
+  kecamatan : varchar(255)
+  kelurahan : varchar(255)
+  alamatLengkap : text
+  radiusMeter : int
+  titikPusat : geography
+  createdAt : datetime
+}
+
+entity "CoverageCheckHistory" as CoverageCheckHistory {
+  * id : int (NN) <<PK>>
+  --
+  coveredAreaId : int <<FK>>
+  alamatLengkap : text
+  provinsi : varchar(255)
+  kota : varchar(255)
+  kecamatan : varchar(255)
+  kelurahan : varchar(255)
+  userLocation : geography
+  isCovered : boolean
+  checkedAt : datetime
+}
+
+entity "BillingInvoice" as BillingInvoice {
+  * id : int (NN) <<PK>>
+  --
+  pelangganId : int (NN) <<FK>>
+  amount : int
+  periodStart : datetime
+  periodEnd : datetime
+  dueAt : datetime
+  paidAt : datetime
+  status : BillingStatus
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "SuspensionHistory" as SuspensionHistory {
+  * id : int (NN) <<PK>>
+  --
+  pelangganId : int (NN) <<FK>>
+  reason : text
+  suspendedAt : datetime
+  resumedAt : datetime
+  createdAt : datetime
+}
+
+entity "Router" as Router {
+  * id : int (NN) <<PK>>
+  --
+  nama : varchar(255)
+  host : varchar(255)
+  username : varchar(255)
+  password : varchar(255)
+  portApi : int
+  portSsh : int
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+User ||--o| Profile : pelangganId
+Router ||--o{ Profile : routerId
+
+CategoryPackage ||--o{ Package : categoryPackageId
+User ||--o{ OrderTable : pelangganId
+Package ||--o{ OrderTable : packageId
+User ||--o{ PackageHistory : pelangganId
+Package ||--o{ PackageHistory : packageId
+
+OrderTable ||--o{ Ticket : orderId
+TicketCategory ||--o{ Ticket : ticketCategoryId
+User ||--o{ Ticket : teknisiUtamaId
+Ticket ||--o{ TicketTechnicianMember : ticketId
+User ||--o{ TicketTechnicianMember : teknisiId
+Ticket ||--o{ TicketHistory : ticketId
+User ||--o{ TicketHistory : actorId
+Ticket ||--o{ TicketAttachment : ticketId
+User ||--o{ TicketAttachment : uploadedBy
+Ticket ||--o| TicketSurvey : ticketId
+Ticket ||--o| TicketSurvey : installationTicketId
+TicketSurvey ||--o{ TicketSurveyItem : ticketSurveyId
+InventoryItem ||--o{ TicketSurveyItem : inventoryItemId
+
+InventoryCategory ||--o{ InventoryItem : inventoryCategoryId
+CoveredArea ||--o{ CoverageCheckHistory : coveredAreaId
+
+User ||--o{ BillingInvoice : pelangganId
+User ||--o{ SuspensionHistory : pelangganId
+
+Profile -[hidden]right- OrderTable
+OrderTable -[hidden]right- Ticket
+Ticket -[hidden]right- TicketSurvey
+InventoryCategory -[hidden]right- BillingInvoice
+
+@enduml

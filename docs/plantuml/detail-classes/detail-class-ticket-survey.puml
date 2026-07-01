@@ -2,22 +2,25 @@
 title Detail Class TicketSurvey
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketSurvey {
   - id: Int
-  - ticketId: Int
+  - surveyTicketId: Int
   - installationTicketId: Int
-  - catatanSurvey: String
-  - hasilSurvey: String
+  - plannedItems: Json
+  - actualItems: Json
+  - notes: String
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + catatHasilSurvey()
-  + tambahRencanaItem()
-  + tambahPemakaianAktual()
-  + buatTiketInstalasi()
-  + updateCatatanSurvey()
+  + completeSurvey()
+  + reportSurveyActual()
+  + getSurveyByTicket()
+  + updateSurvey()
 }
 
+TicketSurvey --> Ticket
 @enduml

@@ -1,0 +1,34 @@
+@startuml
+title SKPL-F-09 Sequence Diagram Kelola Tiket
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":Ticket" as Ticket
+participant ":TicketCategory" as TicketCategory
+participant ":TicketHistory" as TicketHistory
+
+Admin -> Ticket: getAllTickets()
+activate Ticket
+Ticket --> Admin: daftarTiket
+deactivate Ticket
+
+Admin -> TicketCategory: list()
+activate TicketCategory
+TicketCategory --> Admin: daftarKategori
+deactivate TicketCategory
+
+Admin -> Ticket: createTicket(dataTiket)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+Ticket --> Admin: tiketBaru
+deactivate Ticket
+
+Admin -> Ticket: scheduleTicket(ticketId, jadwal)
+Admin -> Ticket: assignTicket(ticketId, teknisiId)
+Admin -> Ticket: getHistory(ticketId)
+Ticket --> Admin: detailKelolaTiket
+
+@enduml

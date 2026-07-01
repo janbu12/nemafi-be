@@ -2,15 +2,30 @@
 title Detail Class Pelanggan
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
-class Pelanggan {
-  + daftarLayanan()
-  + memilihPaket()
-  + melakukanPembayaran()
-  + melihatStatusOrder()
-  + mengajukanTiketGangguan()
-  + melihatTagihan()
+class User {
+  - id: Int
+  - email: String
+  - fullname: String
+  - role: Role
 }
 
+class Pelanggan {
+  --
+  + registerUser()
+  + loginUser()
+  + meProfile()
+  + updateProfile()
+  + createOrder()
+  + getUserOrders()
+  + createPaymentToken()
+  + getPaymentStatus()
+  + createSupportTicket()
+  + getMySupportTickets()
+}
+
+User <|-- Pelanggan
 @enduml

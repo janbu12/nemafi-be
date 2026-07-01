@@ -2,23 +2,31 @@
 title Detail Class Package
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
-class "Package" as InternetPackage {
+class Package {
   - id: Int
-  - categoryPackageId: Int
-  - nama: String
-  - harga: Float
+  - name: String
+  - price: Float
   - downloadSpeed: Float
   - uploadSpeed: Float
-  - deskripsi: String
   - isPopular: Boolean
+  - description: String
+  - metadata: Json
+  - categoryId: Int
+  - createdAt: DateTime
+  - updatedAt: DateTime
   --
-  + tambahPaket()
-  + ubahPaket()
-  + hapusPaket()
-  + lihatDetailPaket()
-  + hitungHarga()
+  + createPackage()
+  + getAllPackages()
+  + getPackageById()
+  + updatePackage()
+  + deletePackage()
+  + syncAllPackagesToAllRouters()
+  + recommendPackage()
 }
 
+Package --> CategoryPackage
 @enduml

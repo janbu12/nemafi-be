@@ -2,23 +2,27 @@
 title Detail Class InventoryItem
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class InventoryItem {
   - id: Int
-  - inventoryCategoryId: Int
-  - nama: String
-  - stok: Int
-  - satuan: String
+  - name: String
+  - stock: Int
+  - unit: String
+  - categoryId: Int
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + tambahItem()
-  + ubahItem()
-  + hapusItem()
-  + tambahStok()
-  + kurangiStok()
-  + cekKetersediaan()
+  + createItem()
+  + getAllItems()
+  + getItemById()
+  + updateItem()
+  + deleteItem()
+  + completeSurvey()
+  + reportSurveyActual()
 }
 
+InventoryItem --> InventoryCategory
 @enduml

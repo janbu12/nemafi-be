@@ -2,23 +2,28 @@
 title Detail Class BillingInvoice
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class BillingInvoice {
   - id: Int
-  - pelangganId: Int
+  - userId: Int
   - amount: Float
   - periodStart: DateTime
   - periodEnd: DateTime
+  - status: BillingStatus
   - dueAt: DateTime
   - paidAt: DateTime
-  - status: BillingStatus
+  - createdAt: DateTime
+  - updatedAt: DateTime
   --
-  + generateInvoice()
-  + hitungTagihan()
-  + tandaiDibayar()
-  + tandaiTerlambat()
-  + cekJatuhTempo()
+  + listInvoices()
+  + getInvoiceById()
+  + payLatest()
+  + markLatestInvoicePaid()
+  + applyOverdueSuspension()
+  + generateMonthlyInvoices()
 }
 
 class "«enumeration»\nBillingStatus" as BillingStatus {
@@ -28,4 +33,5 @@ class "«enumeration»\nBillingStatus" as BillingStatus {
 }
 
 BillingInvoice ..> BillingStatus
+BillingInvoice --> User
 @enduml

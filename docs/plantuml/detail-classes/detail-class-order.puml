@@ -2,36 +2,55 @@
 title Detail Class Order
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class Order {
   - id: Int
-  - pelangganId: Int
-  - packageId: Int
-  - status: OrderStatus
+  - userId: Int
+  - status: Status
   - total: Float
-  - tanggalOrder: DateTime
-  - catatanReview: String
+  - midtransTransactionId: String
+  - midtransOrderId: String
+  - redirectUrl: String
+  - reviewedBy: Int
+  - reviewNotes: String
   - reviewedAt: DateTime
+  - createdAt: DateTime
+  - updatedAt: DateTime
   --
-  + buatOrder()
-  + pilihPaket()
-  + hitungTotal()
-  + updateStatus()
-  + verifikasiPendaftaran()
-  + batalkanOrder()
+  + createOrder()
+  + getUserOrders()
+  + getOrderById()
+  + approveOrder()
+  + rejectOrder()
+  + updateOrderStatus()
+  + saveMidtransTransaction()
+  + getPendingReviewOrders()
 }
 
-class "«enumeration»\nOrderStatus" as OrderStatus {
+class OrderItem {
+  - id: Int
+  - orderId: Int
+  - packageId: Int
+}
+
+class "«enumeration»\nStatus" as Status {
   PENDING_REVIEW
   REVIEW_APPROVED
   REVIEW_REJECTED
   SURVEY_SCHEDULED
+  SURVEY_COMPLETED
+  WAITING_FOR_ASSIGNMENT
   TECHNICIAN_ASSIGNED
   INSTALLATION_IN_PROGRESS
   COMPLETED
   CANCELLED
 }
 
-Order ..> OrderStatus
+Order ..> Status
+Order *-- OrderItem
+OrderItem --> Package
+Order --> User
 @enduml

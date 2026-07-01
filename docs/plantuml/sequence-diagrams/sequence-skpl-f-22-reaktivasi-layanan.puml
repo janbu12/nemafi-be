@@ -1,0 +1,34 @@
+@startuml
+title SKPL-F-22 Sequence Diagram Reaktivasi Layanan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pelanggan
+participant ":BillingInvoice" as BillingInvoice
+participant ":Payment" as Payment
+participant "Midtrans" as Midtrans
+participant ":SuspensionHistory" as SuspensionHistory
+participant ":Router" as Router
+
+Pelanggan -> BillingInvoice: payLatest(userId)
+activate BillingInvoice
+BillingInvoice -> Payment: createPaymentToken(orderId, dataPelanggan)
+activate Payment
+Payment -> Midtrans: requestSnapToken(dataTransaksi)
+Midtrans --> Payment: snapToken
+Payment --> BillingInvoice: tokenPembayaran
+deactivate Payment
+BillingInvoice --> Pelanggan: halamanPembayaran
+deactivate BillingInvoice
+
+Midtrans -> Payment: verifyPaymentNotification(notificationBody)
+activate Payment
+Payment -> BillingInvoice: markLatestInvoicePaid(userId)
+Payment -> SuspensionHistory: payLatest()
+Payment -> Router: enablePppSecret(username, routerId)
+Payment --> Midtrans: reaktivasiBerhasil
+deactivate Payment
+
+@enduml

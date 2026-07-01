@@ -2,19 +2,32 @@
 title Detail Class TicketHistory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketHistory {
   - id: Int
   - ticketId: Int
+  - action: String
+  - description: String
+  - actorType: TicketHistoryActor
   - actorId: Int
-  - actorType: String
-  - aksi: String
-  - deskripsi: String
   - createdAt: DateTime
   --
-  + catatAktivitas()
-  + lihatRiwayat()
+  + addHistory()
+  + addHistoryEntry()
+  + getHistory()
 }
 
+class "«enumeration»\nTicketHistoryActor" as TicketHistoryActor {
+  SYSTEM
+  ADMIN
+  TECHNICIAN
+  CUSTOMER
+}
+
+TicketHistory ..> TicketHistoryActor
+TicketHistory --> Ticket
+TicketHistory --> User
 @enduml

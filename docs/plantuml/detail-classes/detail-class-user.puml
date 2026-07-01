@@ -2,27 +2,34 @@
 title Detail Class User
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class User {
   - id: Int
-  - nama: String
   - email: String
+  - fullname: String
   - password: String
   - role: Role
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + login()
-  + logout()
-  + updateDataAkun()
-  + verifikasiPassword()
+  + registerUser()
+  + loginUser()
+  + logoutUser()
+  + listUsers()
+  + getUser()
+  + createUser()
+  + updateUser()
+  + deleteUser()
+  + resetPassword()
 }
 
 class "«enumeration»\nRole" as Role {
-  PELANGGAN
-  ADMIN
-  TEKNISI
+  CUSTOMER
+  TECHNICIAN
+  TECH_ADMIN
 }
 
 User ..> Role

@@ -2,21 +2,32 @@
 title Detail Class Admin
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
+
+class User {
+  - id: Int
+  - email: String
+  - fullname: String
+  - role: Role
+}
 
 class Admin {
   --
-  + verifikasiPendaftaran()
-  + kelolaDataPelanggan()
-  + kelolaPaketLayanan()
-  + kelolaInventaris()
-  + kelolaAreaLayanan()
-  + kelolaRouter()
-  + kelolaTiket()
-  + jadwalkanTiket()
-  + assignTeknisi()
-  + memantauTagihan()
-  + melihatLaporan()
+  + listUsers()
+  + createUser()
+  + updateUser()
+  + deleteUser()
+  + approveOrder()
+  + rejectOrder()
+  + createTicket()
+  + assignTicket()
+  + scheduleTicket()
+  + listInvoices()
+  + updateBillingSettings()
+  + syncPackageToAllRouters()
 }
 
+User <|-- Admin
 @enduml

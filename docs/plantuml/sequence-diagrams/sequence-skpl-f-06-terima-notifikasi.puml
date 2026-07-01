@@ -1,0 +1,31 @@
+@startuml
+title SKPL-F-06 Sequence Diagram Terima Notifikasi
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pengguna
+participant ":Order" as Order
+participant ":Ticket" as Ticket
+participant ":BillingInvoice" as BillingInvoice
+participant "Socket.io" as SocketIo
+
+Pengguna -> SocketIo: membukaKoneksiRealtime()
+activate SocketIo
+SocketIo --> Pengguna: koneksiAktif
+
+alt perubahan order
+  Order -> SocketIo: event orders:pending
+  SocketIo -> Pengguna: notifikasi order
+else perubahan tiket
+  Ticket -> SocketIo: event tickets:updated
+  SocketIo -> Pengguna: notifikasi tiket
+else perubahan billing
+  BillingInvoice -> SocketIo: event billing:updated
+  SocketIo -> Pengguna: notifikasi tagihan
+end
+
+deactivate SocketIo
+
+@enduml

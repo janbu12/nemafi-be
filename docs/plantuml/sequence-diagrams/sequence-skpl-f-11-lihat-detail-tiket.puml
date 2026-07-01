@@ -1,0 +1,28 @@
+@startuml
+title SKPL-F-11 Sequence Diagram Lihat Detail Tiket
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pengguna
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+participant ":TicketSurvey" as TicketSurvey
+
+Pengguna -> Ticket: getAllTickets()
+activate Ticket
+Ticket --> Pengguna: daftarTiket
+deactivate Ticket
+
+Pengguna -> TicketHistory: getHistory(ticketId)
+activate TicketHistory
+TicketHistory --> Pengguna: riwayatTiket
+deactivate TicketHistory
+
+Pengguna -> TicketSurvey: getSurveyByTicket(ticketId)
+activate TicketSurvey
+TicketSurvey --> Pengguna: dataSurvey
+deactivate TicketSurvey
+
+@enduml

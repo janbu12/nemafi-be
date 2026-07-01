@@ -1,0 +1,38 @@
+@startuml
+title SKPL-F-15 Sequence Diagram Melaporkan Hasil Pengerjaan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Teknisi
+participant ":TicketSurvey" as TicketSurvey
+participant ":TicketSurveyItem" as TicketSurveyItem
+participant ":TicketAttachment" as TicketAttachment
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+actor Admin
+
+Teknisi -> TicketSurvey: reportSurveyActual(ticketId, actualItems, notes)
+activate TicketSurvey
+TicketSurvey -> TicketSurveyItem: reportSurveyActual()
+activate TicketSurveyItem
+TicketSurveyItem --> TicketSurvey: rincianActualItems
+deactivate TicketSurveyItem
+TicketSurvey --> Teknisi: laporanSurveyAktual
+deactivate TicketSurvey
+
+Teknisi -> TicketAttachment: reportSurveyActual(fileLampiran)
+activate TicketAttachment
+TicketAttachment --> Teknisi: lampiranTersimpan
+deactivate TicketAttachment
+
+Teknisi -> Ticket: updateStatus(ticketId, RESOLVED)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+Ticket --> Teknisi: tiketSelesai
+deactivate Ticket
+
+Ticket -> Admin: notifikasi hasil pengerjaan
+
+@enduml

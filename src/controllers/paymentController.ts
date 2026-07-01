@@ -36,6 +36,25 @@ export async function createPaymentToken(req: Request, res: Response) {
     }
 }
 
+// Create payment token for billing invoice (monthly billing)
+export async function createInvoicePaymentToken(req: Request, res: Response) {
+    try {
+        const userId = (req as any).user.id;
+        const { name, email, phone } = req.body;
+        if (!name || !email || !phone) {
+            return responseHandler.error(res, 'name, email, phone are required', 400);
+        }
+        const result = await paymentService.createInvoicePaymentToken(userId, name, email, phone);
+        return responseHandler.success(res, result, 'Invoice payment token created successfully');
+    } catch (error: any) {
+        console.error('[payment/create-invoice-token] Error:', error);
+        if (error.status && error.message) {
+            return responseHandler.error(res, error.message, error.status);
+        }
+        return responseHandler.error(res, 'Internal server error', 500);
+    }
+}
+
 // Midtrans callback notification
 export async function handlePaymentNotification(req: Request, res: Response) {
     try {

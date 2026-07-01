@@ -1,0 +1,27 @@
+@startuml
+title SKPL-F-14 Sequence Diagram Update Progress Instalasi
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Teknisi
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+participant ":TicketSurvey" as TicketSurvey
+actor Pelanggan
+
+Teknisi -> Ticket: updateStatus(ticketId, IN_PROGRESS)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+Ticket --> Teknisi: progressTersimpan
+deactivate Ticket
+
+Teknisi -> TicketSurvey: updateSurvey(ticketId, dataProgress)
+activate TicketSurvey
+TicketSurvey --> Teknisi: surveyDiperbarui
+deactivate TicketSurvey
+
+Ticket -> Pelanggan: notifikasi progress instalasi
+
+@enduml

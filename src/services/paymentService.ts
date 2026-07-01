@@ -107,6 +107,73 @@ async function createPaymentToken(orderId: number, customerName: string, custome
     }
 }
 
+// Create Snap Token for billing invoice payment (monthly renewal)
+async function createInvoicePaymentToken(userId: number, customerName: string, customerEmail: string, customerPhone: string) {
+    try {
+        const invoice = await prismaClient.billingInvoice.findFirst({
+            where: { userId, status: { in: ['UNPAID', 'OVERDUE'] } },
+            orderBy: { dueAt: 'desc' },
+        });
+
+        if (!invoice) {
+            throw { status: 404, message: 'Tidak ada tagihan yang perlu dibayar.' };
+        }
+
+        const midtransOrderId = `INVOICE-${invoice.id}-${Date.now()}`;
+
+        const transactionData = {
+            transaction_details: {
+                order_id: midtransOrderId,
+                gross_amount: Math.ceil(invoice.amount)
+            },
+            customer_details: {
+                first_name: customerName,
+                email: customerEmail,
+                phone: customerPhone
+            },
+            item_details: [{
+                id: `invoice-${invoice.id}`,
+                price: Math.ceil(invoice.amount),
+                quantity: 1,
+                name: `Tagihan Internet Bulan ${new Date(invoice.periodStart).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+            }],
+        };
+
+        const { serverKey, baseUrl } = await getMidtransConfig();
+        if (!serverKey) {
+            throw { status: 400, message: 'Konfigurasi Midtrans belum lengkap.' };
+        }
+        const auth = Buffer.from(`${serverKey}:`).toString('base64');
+
+        const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(transactionData)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text().catch(() => '');
+            console.error('Midtrans invoice token error:', errorBody);
+            throw { status: 502, message: `Midtrans error: ${errorBody || 'Failed to create token'}` };
+        }
+
+        const result = await response.json() as any;
+        console.log('Midtrans invoice token response:', result);
+
+        return {
+            snapToken: result.token,
+            redirectUrl: result.redirect_url,
+            invoiceId: invoice.id
+        };
+    } catch (error: any) {
+        if (error.status && error.message) throw error;
+        throw { status: 500, message: 'Failed to create invoice payment token', error: error.message };
+    }
+}
+
 // Verify payment notification (callback from Midtrans)
 async function verifyPaymentNotification(notificationBody: any) {
     try {
@@ -131,69 +198,71 @@ async function verifyPaymentNotification(notificationBody: any) {
             throw { status: 401, message: 'Invalid signature' };
         }
 
-        // Extract order ID from Midtrans order ID (format: ORDER-{orderId}-{timestamp})
-        const orderId = parseInt(order_id.split('-')[1]);
-        if (isNaN(orderId)) {
-            throw { status: 400, message: 'Invalid order ID in notification' };
-        }
-
-        const order = await prismaClient.order.findUnique({
-            where: { id: orderId },
-        });
-
-        if (!order) {
-            throw { status: 404, message: 'Order not found' };
+        // Determine type: INVOICE-{invoiceId}-{ts} or ORDER-{orderId}-{ts}
+        const isInvoicePayment = order_id.startsWith('INVOICE-');
+        const entityId = parseInt(order_id.split('-')[1]);
+        if (isNaN(entityId)) {
+            throw { status: 400, message: 'Invalid ID in notification' };
         }
 
         // Handle transaction status
         if (transaction_status === 'settlement' || transaction_status === 'capture') {
-            // Payment success - move to next status
-            await orderService.updateOrderStatus(orderId, 'SURVEY_SCHEDULED');
-            await ticketService.markTicketPaid(orderId);
-            await billingService.markLatestInvoicePaid(order.userId);
-            const orderWithItems = await prismaClient.order.findUnique({
-                where: { id: orderId },
-                include: { items: { include: { package: true } } },
-            });
-            if (orderWithItems && orderWithItems.items.length > 0) {
-                const paidPackage = orderWithItems.items[0].package;
-                const activeHistory = await prismaClient.packageHistory.findFirst({
-                    where: { userId: order.userId, endedAt: null },
-                    orderBy: { startedAt: 'desc' },
+            if (isInvoicePayment) {
+                // Monthly billing invoice payment
+                const invoice = await prismaClient.billingInvoice.findUnique({ where: { id: entityId } });
+                if (!invoice) throw { status: 404, message: 'Invoice not found' };
+                await billingService.markLatestInvoicePaid(invoice.userId);
+                return { status: 'success', message: 'Invoice payment verified', invoiceId: entityId };
+            } else {
+                // First-time order payment (registration)
+                const order = await prismaClient.order.findUnique({ where: { id: entityId } });
+                if (!order) throw { status: 404, message: 'Order not found' };
+                await orderService.updateOrderStatus(entityId, 'SURVEY_SCHEDULED');
+                await ticketService.markTicketPaid(entityId);
+                await billingService.markLatestInvoicePaid(order.userId);
+                const orderWithItems = await prismaClient.order.findUnique({
+                    where: { id: entityId },
+                    include: { items: { include: { package: true } } },
                 });
-                if (!activeHistory) {
-                    await prismaClient.packageHistory.create({
-                        data: {
-                            userId: order.userId,
-                            packageId: paidPackage.id,
-                            startedAt: new Date(),
-                            reason: 'Aktivasi paket setelah pembayaran',
-                        },
+                if (orderWithItems && orderWithItems.items.length > 0) {
+                    const paidPackage = orderWithItems.items[0].package;
+                    const activeHistory = await prismaClient.packageHistory.findFirst({
+                        where: { userId: order.userId, endedAt: null },
+                        orderBy: { startedAt: 'desc' },
                     });
-                } else if (activeHistory.packageId !== paidPackage.id) {
-                    await prismaClient.packageHistory.update({
-                        where: { id: activeHistory.id },
-                        data: { endedAt: new Date(), reason: 'Perubahan paket' },
-                    });
-                    await prismaClient.packageHistory.create({
-                        data: {
-                            userId: order.userId,
-                            packageId: paidPackage.id,
-                            startedAt: new Date(),
-                            reason: 'Aktivasi paket setelah pembayaran',
-                        },
-                    });
+                    if (!activeHistory) {
+                        await prismaClient.packageHistory.create({
+                            data: {
+                                userId: order.userId,
+                                packageId: paidPackage.id,
+                                startedAt: new Date(),
+                                reason: 'Aktivasi paket setelah pembayaran',
+                            },
+                        });
+                    } else if (activeHistory.packageId !== paidPackage.id) {
+                        await prismaClient.packageHistory.update({
+                            where: { id: activeHistory.id },
+                            data: { endedAt: new Date(), reason: 'Perubahan paket' },
+                        });
+                        await prismaClient.packageHistory.create({
+                            data: {
+                                userId: order.userId,
+                                packageId: paidPackage.id,
+                                startedAt: new Date(),
+                                reason: 'Aktivasi paket setelah pembayaran',
+                            },
+                        });
+                    }
                 }
+                return { status: 'success', message: 'Payment verified', orderId: entityId };
             }
-            return { status: 'success', message: 'Payment verified', orderId };
         } else if (transaction_status === 'pending') {
-            return { status: 'pending', message: 'Payment pending', orderId };
+            return { status: 'pending', message: 'Payment pending', entityId };
         } else if (transaction_status === 'deny' || transaction_status === 'cancel' || transaction_status === 'expire') {
-            // Payment failed - keep order in REVIEW_APPROVED
-            return { status: 'failed', message: 'Payment failed or cancelled', orderId };
+            return { status: 'failed', message: 'Payment failed or cancelled', entityId };
         }
 
-        return { status: 'unknown', message: 'Unknown transaction status', orderId };
+        return { status: 'unknown', message: 'Unknown transaction status', entityId };
     } catch (error: any) {
         if (error.status && error.message) {
             throw error;
@@ -222,6 +291,7 @@ async function getPaymentStatus(orderId: number) {
 
 export default {
     createPaymentToken,
+    createInvoicePaymentToken,
     verifyPaymentNotification,
     getPaymentStatus
 };

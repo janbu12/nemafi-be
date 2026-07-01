@@ -1,0 +1,35 @@
+@startuml
+title SKPL-F-21 Sequence Diagram Suspend Layanan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Sistem
+participant ":BillingSetting" as BillingSetting
+participant ":BillingInvoice" as BillingInvoice
+participant ":SuspensionHistory" as SuspensionHistory
+participant ":Router" as Router
+actor Pelanggan
+
+Sistem -> BillingSetting: getBillingSettings()
+activate BillingSetting
+BillingSetting --> Sistem: konfigurasiSuspend
+deactivate BillingSetting
+
+Sistem -> BillingInvoice: applyOverdueSuspension(graceDays)
+activate BillingInvoice
+BillingInvoice -> SuspensionHistory: applyOverdueSuspension()
+activate SuspensionHistory
+SuspensionHistory --> BillingInvoice: riwayatSuspend
+deactivate SuspensionHistory
+BillingInvoice -> Router: disablePppSecret(username, routerId)
+activate Router
+Router --> BillingInvoice: pppDinonaktifkan
+deactivate Router
+BillingInvoice --> Sistem: layananDisuspend
+deactivate BillingInvoice
+
+BillingInvoice -> Pelanggan: notifikasi suspend layanan
+
+@enduml

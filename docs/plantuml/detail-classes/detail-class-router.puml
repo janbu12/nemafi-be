@@ -2,26 +2,38 @@
 title Detail Class Router
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class Router {
   - id: Int
-  - nama: String
+  - name: String
   - host: String
-  - username: String
+  - user: String
   - password: String
+  - port: Int
   - portApi: Int
   - portSsh: Int
+  - pppLocalAddress: String
+  - pppRemoteAddress: String
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + tambahRouter()
-  + ubahRouter()
-  + hapusRouter()
-  + testKoneksi()
-  + aktivasiLayanan()
-  + suspendLayanan()
-  + reaktivasiLayanan()
+  + create()
+  + getAll()
+  + getById()
+  + update()
+  + remove()
+  + testConnection()
+  + getActiveUsers()
+  + addPppSecret()
+  + disablePppSecret()
+  + enablePppSecret()
+  + createPppSecret()
+  + syncPackageToRouter()
+  + syncAllPackagesToRouter()
 }
 
+Router "1" -- "*" Profile
 @enduml

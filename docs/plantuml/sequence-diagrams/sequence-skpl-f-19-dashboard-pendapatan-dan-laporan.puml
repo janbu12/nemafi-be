@@ -1,0 +1,40 @@
+@startuml
+title SKPL-F-19 Sequence Diagram Dashboard Pendapatan dan Laporan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":BillingInvoice" as BillingInvoice
+participant ":Order" as Order
+participant ":Ticket" as Ticket
+participant ":CoveredArea" as CoveredArea
+participant ":CoverageCheckHistory" as CoverageCheckHistory
+
+Admin -> BillingInvoice: listInvoices()
+activate BillingInvoice
+BillingInvoice --> Admin: dataPendapatan
+deactivate BillingInvoice
+
+Admin -> Order: getPendingReviewOrders()
+activate Order
+Order --> Admin: dataOrderPending
+deactivate Order
+
+Admin -> Ticket: getAllTickets()
+activate Ticket
+Ticket --> Admin: dataTiketOperasional
+deactivate Ticket
+
+Admin -> CoveredArea: getAllCoveredAreas()
+activate CoveredArea
+CoveredArea --> Admin: dataAreaLayanan
+deactivate CoveredArea
+
+Admin -> CoverageCheckHistory: getCheckHistory()
+activate CoverageCheckHistory
+CoverageCheckHistory --> Admin: laporanPengecekanArea
+deactivate CoverageCheckHistory
+
+@enduml

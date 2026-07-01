@@ -1,0 +1,26 @@
+@startuml
+title SKPL-F-12 Sequence Diagram Update Status Tiket
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Teknisi
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+actor Admin
+actor Pelanggan
+
+Teknisi -> Ticket: updateStatus(ticketId, status)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+activate TicketHistory
+TicketHistory --> Ticket: riwayatStatus
+deactivate TicketHistory
+Ticket --> Teknisi: statusTiketDiperbarui
+deactivate Ticket
+
+Ticket -> Admin: notifikasi status tiket
+Ticket -> Pelanggan: notifikasi status tiket
+
+@enduml

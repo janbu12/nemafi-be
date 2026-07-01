@@ -1,22 +1,23 @@
 @startuml
-title Detail Class CoveredCheckHistory
+title Detail Class CoverageCheckHistory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
-class CoveredCheckHistory {
+class CoverageCheckHistory {
   - id: Int
-  - alamatLengkap: String
-  - provinsi: String
-  - kota: String
-  - kecamatan: String
-  - kelurahan: String
-  - userLocation: Point
+  - fullAddress: String
+  - province: String
+  - city: String
+  - district: String
+  - village: String
+  - userLocation: Geography
   - isCovered: Boolean
   - checkedAt: DateTime
   --
-  + simpanHasilPengecekan()
-  + lihatRiwayatPengecekan()
+  + checkAvailability()
+  + getCheckHistory()
 }
-
 @enduml

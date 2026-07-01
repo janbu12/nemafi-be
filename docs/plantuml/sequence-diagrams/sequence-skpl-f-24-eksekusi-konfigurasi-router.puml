@@ -1,0 +1,43 @@
+@startuml
+title SKPL-F-24 Sequence Diagram Eksekusi Konfigurasi Router
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Sistem
+participant ":Router" as Router
+participant ":Package" as Package
+participant ":Profile" as Profile
+participant "MikroTik" as MikroTik
+
+Sistem -> Router: testConnection(routerId)
+activate Router
+Router -> MikroTik: koneksiRouterOS()
+MikroTik --> Router: koneksiBerhasil
+Router --> Sistem: routerSiap
+deactivate Router
+
+alt sinkronisasi paket
+  Sistem -> Package: syncAllPackagesToAllRouters()
+  activate Package
+  Package -> Router: syncAllPackagesToRouter(routerId)
+  activate Router
+  Router -> MikroTik: setPppProfile(rateLimit)
+  MikroTik --> Router: profileTersinkron
+  Router --> Package: hasilSinkronisasi
+  deactivate Router
+  Package --> Sistem: paketTersinkron
+  deactivate Package
+else konfigurasi pelanggan
+  Sistem -> Profile: meProfile()
+  Profile --> Sistem: dataPppPelanggan
+  Sistem -> Router: createPppSecret(routerId, dataPpp)
+  activate Router
+  Router -> MikroTik: addPppSecret()
+  MikroTik --> Router: pppSecretDibuat
+  Router --> Sistem: konfigurasiBerhasil
+  deactivate Router
+end
+
+@enduml

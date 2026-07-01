@@ -2,19 +2,21 @@
 title Detail Class SuspensionHistory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class SuspensionHistory {
   - id: Int
-  - pelangganId: Int
+  - userId: Int
   - reason: String
   - suspendedAt: DateTime
   - resumedAt: DateTime
   - createdAt: DateTime
   --
-  + catatSuspend()
-  + catatReaktivasi()
-  + lihatRiwayatSuspend()
+  + applyOverdueSuspension()
+  + payLatest()
 }
 
+SuspensionHistory --> User
 @enduml

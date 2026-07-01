@@ -2,17 +2,25 @@
 title Detail Class TicketTechnicianMember
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketTechnicianMember {
   - id: Int
   - ticketId: Int
-  - teknisiId: Int
-  - assignedAt: DateTime
+  - technicianId: Int
+  - createdAt: DateTime
   --
-  + tambahTeknisi()
-  + hapusTeknisi()
-  + lihatAnggotaTeknisi()
+  + assignTicket()
+  + updateTicketMembers()
 }
 
+note right of TicketTechnicianMember
+Di Prisma diimplementasikan
+sebagai model TicketMember.
+end note
+
+TicketTechnicianMember --> Ticket
+TicketTechnicianMember --> User
 @enduml

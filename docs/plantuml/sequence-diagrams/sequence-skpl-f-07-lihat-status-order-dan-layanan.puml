@@ -1,0 +1,37 @@
+@startuml
+title SKPL-F-07 Sequence Diagram Lihat Status Order dan Layanan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pelanggan
+participant ":Order" as Order
+participant ":Profile" as Profile
+participant ":BillingInvoice" as BillingInvoice
+participant ":PackageHistory" as PackageHistory
+
+Pelanggan -> Order: getUserOrders(userId)
+activate Order
+Order --> Pelanggan: daftarOrder
+deactivate Order
+
+Pelanggan -> Order: getOrderById(orderId, userId)
+activate Order
+Order --> Pelanggan: detailStatusOrder
+deactivate Order
+
+Pelanggan -> Profile: meProfile()
+activate Profile
+Profile --> Pelanggan: statusPppLayanan
+deactivate Profile
+
+Pelanggan -> BillingInvoice: getInvoiceById(invoiceId)
+activate BillingInvoice
+BillingInvoice --> Pelanggan: statusTagihan
+deactivate BillingInvoice
+
+Pelanggan -> PackageHistory: changeUserPackage()
+PackageHistory --> Pelanggan: riwayatPaketAktif
+
+@enduml

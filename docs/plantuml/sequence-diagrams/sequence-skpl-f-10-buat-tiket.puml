@@ -1,0 +1,34 @@
+@startuml
+title SKPL-F-10 Sequence Diagram Buat Tiket
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":Order" as Order
+participant ":TicketCategory" as TicketCategory
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+
+Admin -> Order: getOrderById(orderId)
+activate Order
+Order --> Admin: detailOrder
+deactivate Order
+
+Admin -> TicketCategory: list()
+activate TicketCategory
+TicketCategory --> Admin: kategoriTiket
+deactivate TicketCategory
+
+Admin -> Ticket: createTicket(dataTiket)
+activate Ticket
+Ticket -> TicketCategory: list()
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+activate TicketHistory
+TicketHistory --> Ticket: riwayatTiket
+deactivate TicketHistory
+Ticket --> Admin: tiketBerhasilDibuat
+deactivate Ticket
+
+@enduml

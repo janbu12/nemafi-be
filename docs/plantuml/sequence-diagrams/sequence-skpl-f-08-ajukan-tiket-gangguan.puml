@@ -1,0 +1,30 @@
+@startuml
+title SKPL-F-08 Sequence Diagram Ajukan Tiket Gangguan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pelanggan
+participant ":TicketCategory" as TicketCategory
+participant ":Ticket" as Ticket
+participant ":TicketHistory" as TicketHistory
+actor Admin
+
+Pelanggan -> TicketCategory: list()
+activate TicketCategory
+TicketCategory --> Pelanggan: kategoriGangguan
+deactivate TicketCategory
+
+Pelanggan -> Ticket: createSupportTicket(user, dataGangguan)
+activate Ticket
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+activate TicketHistory
+TicketHistory --> Ticket: riwayatTiketDibuat
+deactivate TicketHistory
+Ticket --> Pelanggan: tiketGangguanOPEN
+deactivate Ticket
+
+Ticket -> Admin: notifikasi tiket gangguan baru
+
+@enduml

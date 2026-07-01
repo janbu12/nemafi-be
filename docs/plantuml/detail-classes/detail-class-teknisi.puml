@@ -2,15 +2,26 @@
 title Detail Class Teknisi
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
-class Teknisi {
-  + melihatTiketDitugaskan()
-  + menerimaTugas()
-  + melakukanSurvey()
-  + melakukanInstalasi()
-  + updateProgressPekerjaan()
-  + melaporkanHasilPengerjaan()
+class User {
+  - id: Int
+  - email: String
+  - fullname: String
+  - role: Role
 }
 
+class Teknisi {
+  --
+  + listTechnicians()
+  + getMyTickets()
+  + updateStatus()
+  + completeSurvey()
+  + reportSurveyActual()
+  + updateTicketMembers()
+}
+
+User <|-- Teknisi
 @enduml

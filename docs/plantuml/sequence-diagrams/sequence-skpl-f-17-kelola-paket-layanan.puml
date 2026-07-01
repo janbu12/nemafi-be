@@ -1,0 +1,35 @@
+@startuml
+title SKPL-F-17 Sequence Diagram Kelola Paket Layanan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":CategoryPackage" as CategoryPackage
+participant ":Package" as Package
+participant ":Router" as Router
+
+Admin -> CategoryPackage: getAllCategories()
+activate CategoryPackage
+CategoryPackage --> Admin: daftarKategoriPaket
+deactivate CategoryPackage
+
+Admin -> Package: getAllPackages()
+activate Package
+Package --> Admin: daftarPaket
+deactivate Package
+
+alt tambah paket
+  Admin -> Package: createPackage(dataPaket)
+  Package -> Router: syncAllPackagesToAllRouters()
+else ubah paket
+  Admin -> Package: updatePackage(id, dataPaket)
+  Package -> Router: syncAllPackagesToAllRouters()
+else hapus paket
+  Admin -> Package: deletePackage(id)
+end
+
+Package --> Admin: dataPaketTersimpan
+
+@enduml

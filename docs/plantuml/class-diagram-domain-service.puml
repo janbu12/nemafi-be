@@ -1,0 +1,185 @@
+@startuml
+title Class Diagram Domain dan Service - Manajemen Pelanggan dan Otomatisasi Layanan Internet
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam packageTitleAlignment left
+skinparam nodesep 50
+skinparam ranksep 45
+hide members
+hide circle
+
+left to right direction
+
+package "Domain Class" {
+  package "Akun dan Pelanggan" {
+    class User
+    class Pelanggan
+    class Admin
+    class Teknisi
+    class Profile
+
+    User <|-- Pelanggan
+    User <|-- Admin
+    User <|-- Teknisi
+    Pelanggan "1" -- "0..1" Profile
+  }
+
+  package "Paket dan Pendaftaran Layanan" {
+    class CategoryPackage
+    class "Package" as InternetPackage
+    class Order
+    class PackageHistory
+
+    CategoryPackage "1" -- "*" InternetPackage
+    Order "*" -- "1" InternetPackage
+    Pelanggan "1" -- "*" Order
+    Pelanggan "1" -- "*" PackageHistory
+    InternetPackage "1" -- "*" PackageHistory
+  }
+
+  package "Tiket dan Pekerjaan Lapangan" {
+    class Ticket
+    class TicketCategory
+    class TicketSurvey
+    class TicketSurveyItem
+    class TicketHistory
+    class TicketAttachment
+    class TicketTechnicianMember
+
+    Order "1" -- "*" Ticket
+    TicketCategory "1" -- "*" Ticket
+    Ticket "1" -- "0..1" TicketSurvey
+    Ticket "1" *-- "*" TicketHistory
+    Ticket "1" *-- "*" TicketAttachment
+    Ticket "1" *-- "*" TicketTechnicianMember
+    TicketSurvey "1" *-- "*" TicketSurveyItem
+    Teknisi "1" -- "*" Ticket
+    Teknisi "1" -- "*" TicketTechnicianMember
+  }
+
+  package "Inventaris dan Area Layanan" {
+    class InventoryCategory
+    class InventoryItem
+    class CoveredArea
+    class CoverageCheckHistory
+
+    InventoryCategory "1" -- "*" InventoryItem
+    InventoryItem "1" -- "*" TicketSurveyItem
+    CoveredArea "1" -- "*" CoverageCheckHistory
+  }
+
+  package "Billing dan Otomatisasi Layanan" {
+    class BillingInvoice
+    class BillingSetting
+    class SuspensionHistory
+    class Router
+
+    Pelanggan "1" -- "*" BillingInvoice
+    Pelanggan "1" -- "*" SuspensionHistory
+    BillingSetting .. BillingInvoice
+    Router "1" -- "*" Profile
+  }
+}
+
+package "Service Class" {
+  class AuthService
+  class UserService
+  class ProfileService
+  class CategoryPackageService
+  class PackageService
+  class OrderService
+  class PaymentService
+  class BillingService
+  class TicketService
+  class TicketCategoryService
+  class InventoryCategoryService
+  class InventoryService
+  class CoveredAreaService
+  class RouterService
+  class MikrotikService
+  class RecommendationService
+}
+
+AuthService ..> User
+UserService ..> User
+UserService ..> Profile
+ProfileService ..> User
+ProfileService ..> Profile
+ProfileService ..> BillingService
+
+CategoryPackageService ..> CategoryPackage
+PackageService ..> InternetPackage
+PackageService ..> CategoryPackage
+PackageService ..> MikrotikService
+RecommendationService ..> InternetPackage
+
+OrderService ..> Order
+OrderService ..> InternetPackage
+OrderService ..> Ticket
+OrderService ..> BillingInvoice
+OrderService ..> PackageHistory
+OrderService ..> TicketHistory
+
+PaymentService ..> Order
+PaymentService ..> Ticket
+PaymentService ..> BillingInvoice
+PaymentService ..> PackageHistory
+PaymentService ..> OrderService
+PaymentService ..> BillingService
+PaymentService ..> TicketService
+
+BillingService ..> BillingInvoice
+BillingService ..> BillingSetting
+BillingService ..> SuspensionHistory
+BillingService ..> Profile
+BillingService ..> Router
+BillingService ..> PackageHistory
+BillingService ..> MikrotikService
+
+TicketCategoryService ..> TicketCategory
+TicketService ..> Ticket
+TicketService ..> TicketCategory
+TicketService ..> TicketHistory
+TicketService ..> TicketAttachment
+TicketService ..> TicketSurvey
+TicketService ..> TicketSurveyItem
+TicketService ..> TicketTechnicianMember
+TicketService ..> InventoryItem
+TicketService ..> Profile
+TicketService ..> Router
+TicketService ..> MikrotikService
+
+InventoryCategoryService ..> InventoryCategory
+InventoryService ..> InventoryItem
+InventoryService ..> InventoryCategory
+
+CoveredAreaService ..> CoveredArea
+CoveredAreaService ..> CoverageCheckHistory
+
+RouterService ..> Router
+MikrotikService ..> Router
+MikrotikService ..> Profile
+MikrotikService ..> InternetPackage
+
+Admin ..> OrderService
+Admin ..> TicketService
+Admin ..> UserService
+Admin ..> PackageService
+Admin ..> InventoryService
+Admin ..> CoveredAreaService
+Admin ..> RouterService
+Admin ..> BillingService
+
+Pelanggan ..> AuthService
+Pelanggan ..> ProfileService
+Pelanggan ..> OrderService
+Pelanggan ..> PaymentService
+Pelanggan ..> TicketService
+Pelanggan ..> RecommendationService
+
+Teknisi ..> TicketService
+
+@enduml

@@ -2,20 +2,23 @@
 title Detail Class PackageHistory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class PackageHistory {
   - id: Int
-  - pelangganId: Int
+  - userId: Int
   - packageId: Int
   - startedAt: DateTime
   - endedAt: DateTime
-  - alasan: String
+  - reason: String
+  - createdAt: DateTime
   --
-  + catatAktivasiPaket()
-  + catatPerubahanPaket()
-  + akhiriRiwayatPaket()
-  + lihatRiwayatPaket()
+  + changeUserPackage()
+  + verifyPaymentNotification()
 }
 
+PackageHistory --> User
+PackageHistory --> Package
 @enduml

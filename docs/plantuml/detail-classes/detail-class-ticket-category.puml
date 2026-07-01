@@ -2,19 +2,22 @@
 title Detail Class TicketCategory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketCategory {
   - id: Int
-  - nama: String
-  - requiresTechnician: Boolean
+  - name: String
   - isExpirable: Boolean
   - expireHours: Int
+  - requiresTechnician: Boolean
+  - createdAt: DateTime
+  - updatedAt: DateTime
   --
-  + tambahKategoriTiket()
-  + ubahKategoriTiket()
-  + hapusKategoriTiket()
-  + tentukanKebutuhanTeknisi()
+  + list()
+  + create()
+  + update()
+  + remove()
 }
-
 @enduml

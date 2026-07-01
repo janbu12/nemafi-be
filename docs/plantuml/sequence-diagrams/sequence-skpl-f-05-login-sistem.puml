@@ -1,0 +1,25 @@
+@startuml
+title SKPL-F-05 Sequence Diagram Login Sistem
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pengguna
+participant ":User" as User
+participant ":Profile" as Profile
+
+Pengguna -> User: loginUser(email, password)
+activate User
+alt kredensial valid
+  User --> Pengguna: token, role
+  Pengguna -> Profile: meProfile()
+  activate Profile
+  Profile --> Pengguna: dataProfil
+  deactivate Profile
+else kredensial tidak valid
+  User --> Pengguna: pesanGagalLogin
+end
+deactivate User
+
+@enduml

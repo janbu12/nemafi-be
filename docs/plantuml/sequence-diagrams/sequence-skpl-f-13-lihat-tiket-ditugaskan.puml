@@ -1,0 +1,24 @@
+@startuml
+title SKPL-F-13 Sequence Diagram Lihat Tiket Ditugaskan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Teknisi
+participant ":Ticket" as Ticket
+participant ":TicketTechnicianMember" as TicketMember
+participant ":TicketSurvey" as TicketSurvey
+
+Teknisi -> Ticket: getMyTickets(technician)
+activate Ticket
+Ticket -> TicketMember: updateTicketMembers()
+Ticket --> Teknisi: daftarTiketDitugaskan
+deactivate Ticket
+
+Teknisi -> TicketSurvey: getSurveyByTicket(ticketId)
+activate TicketSurvey
+TicketSurvey --> Teknisi: detailSurveyAtauInstalasi
+deactivate TicketSurvey
+
+@enduml

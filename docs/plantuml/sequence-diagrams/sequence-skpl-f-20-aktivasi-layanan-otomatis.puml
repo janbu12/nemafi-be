@@ -1,0 +1,31 @@
+@startuml
+title SKPL-F-20 Sequence Diagram Aktivasi Layanan Otomatis
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Sistem
+participant ":Ticket" as Ticket
+participant ":Profile" as Profile
+participant ":Router" as Router
+participant ":TicketHistory" as TicketHistory
+actor Pelanggan
+
+Sistem -> Ticket: updateStatus(ticketId, COMPLETED)
+activate Ticket
+Ticket -> Profile: meProfile()
+activate Profile
+Profile --> Ticket: dataPppPelanggan
+deactivate Profile
+Ticket -> Router: addPppSecret(profile)
+activate Router
+Router --> Ticket: layananAktif
+deactivate Router
+Ticket -> TicketHistory: addHistoryEntry(ticketId, action, description, actorId)
+Ticket --> Sistem: aktivasiBerhasil
+deactivate Ticket
+
+Ticket -> Pelanggan: notifikasi layanan aktif
+
+@enduml

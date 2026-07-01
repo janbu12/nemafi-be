@@ -2,6 +2,8 @@
 title Detail Class TicketAttachment
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketAttachment {
@@ -9,13 +11,14 @@ class TicketAttachment {
   - ticketId: Int
   - filename: String
   - mimeType: String
-  - fileUrl: String
-  - uploadedBy: Int
+  - dataUrl: String
   - createdAt: DateTime
   --
-  + uploadLampiran()
-  + lihatLampiran()
-  + hapusLampiran()
+  + createTicket()
+  + updateStatus()
+  + completeSurvey()
+  + reportSurveyActual()
 }
 
+TicketAttachment --> Ticket
 @enduml

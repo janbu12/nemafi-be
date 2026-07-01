@@ -1,0 +1,34 @@
+@startuml
+title SKPL-F-23 Sequence Diagram Kelola Data Router MikroTik
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":Router" as Router
+
+Admin -> Router: getAll()
+activate Router
+Router --> Admin: daftarRouter
+deactivate Router
+
+Admin -> Router: getById(routerId)
+activate Router
+Router --> Admin: detailRouter
+deactivate Router
+
+alt tambah router
+  Admin -> Router: create(dataRouter)
+else ubah router
+  Admin -> Router: update(routerId, dataRouter)
+else hapus router
+  Admin -> Router: remove(routerId)
+end
+
+Admin -> Router: testConnection(routerId)
+activate Router
+Router --> Admin: hasilKoneksiRouter
+deactivate Router
+
+@enduml

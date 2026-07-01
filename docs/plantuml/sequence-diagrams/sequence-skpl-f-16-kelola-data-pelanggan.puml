@@ -1,0 +1,35 @@
+@startuml
+title SKPL-F-16 Sequence Diagram Kelola Data Pelanggan
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":User" as User
+participant ":Profile" as Profile
+participant ":PackageHistory" as PackageHistory
+
+Admin -> User: listUsers()
+activate User
+User --> Admin: daftarPelanggan
+deactivate User
+
+Admin -> User: getUser(id)
+activate User
+User --> Admin: detailPelanggan
+deactivate User
+
+alt tambah atau ubah pelanggan
+  Admin -> User: createUser(actor, input)
+  Admin -> Profile: updateProfile(user, data)
+else reset password
+  Admin -> User: resetPassword(id, actor, input)
+else ubah paket pelanggan
+  Admin -> PackageHistory: changeUserPackage(userId, packageId)
+end
+
+Admin -> User: updateUser(id, input)
+User --> Admin: dataPelangganDiperbarui
+
+@enduml

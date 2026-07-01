@@ -2,25 +2,35 @@
 title Detail Class Profile
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class Profile {
   - id: Int
-  - pelangganId: Int
-  - nomorTelepon: String
-  - alamatLengkap: String
-  - provinsi: String
-  - kota: String
-  - kecamatan: String
-  - kelurahan: String
+  - user_id: Int
+  - phone_number: String
+  - image_url: String
+  - full_address: String
+  - province: String
+  - city: String
+  - district: String
+  - subdistrict: String
   - latitude: Float
   - longitude: Float
-  - usernamePpp: String
-  - passwordPpp: String
+  - routerId: Int
+  - pppUsername: String
+  - pppPassword: String
+  - pppProfile: String
+  - isPppActive: Boolean
   --
+  + meProfile()
   + updateProfile()
-  + updateLokasi()
-  + setKonfigurasiLayanan()
+  + updateEmail()
+  + updatePassword()
+  + changePackage()
 }
 
+Profile --> User
+Profile --> Router
 @enduml

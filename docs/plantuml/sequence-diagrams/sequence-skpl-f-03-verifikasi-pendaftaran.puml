@@ -1,0 +1,46 @@
+@startuml
+title SKPL-F-03 Sequence Diagram Verifikasi Pendaftaran
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Admin
+participant ":Order" as Order
+participant ":BillingInvoice" as BillingInvoice
+participant ":Ticket" as Ticket
+actor Pelanggan
+
+Admin -> Order: getPendingReviewOrders()
+activate Order
+Order --> Admin: daftarOrderPending
+deactivate Order
+
+Admin -> Order: getOrderById(orderId)
+activate Order
+Order --> Admin: detailPendaftaran
+deactivate Order
+
+alt data valid
+  Admin -> Order: approveOrder(orderId, adminId, notes)
+  activate Order
+  Order -> BillingInvoice: generateMonthlyInvoices()
+  activate BillingInvoice
+  BillingInvoice --> Order: invoiceAwal
+  deactivate BillingInvoice
+  Order -> Ticket: createTicket(dataTiketSurvey)
+  activate Ticket
+  Ticket --> Order: tiketSurvey
+  deactivate Ticket
+  Order --> Admin: orderREVIEW_APPROVED
+  deactivate Order
+  Order -> Pelanggan: notifikasi pendaftaran disetujui
+else data tidak valid
+  Admin -> Order: rejectOrder(orderId, adminId, notes)
+  activate Order
+  Order --> Admin: orderREVIEW_REJECTED
+  deactivate Order
+  Order -> Pelanggan: notifikasi pendaftaran ditolak
+end
+
+@enduml

@@ -2,18 +2,20 @@
 title Detail Class InventoryCategory
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class InventoryCategory {
   - id: Int
-  - nama: String
+  - name: String
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + tambahKategori()
-  + ubahKategori()
-  + hapusKategori()
-  + lihatDaftarKategori()
+  + createCategory()
+  + getAllCategories()
+  + getCategoryById()
+  + updateCategory()
+  + deleteCategory()
 }
-
 @enduml

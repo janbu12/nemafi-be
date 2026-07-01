@@ -2,26 +2,35 @@
 title Detail Class Ticket
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class Ticket {
   - id: Int
   - orderId: Int
-  - ticketCategoryId: Int
-  - teknisiUtamaId: Int
-  - judul: String
-  - deskripsi: String
+  - technicianId: Int
   - status: TicketStatus
+  - paymentStatus: TicketPaymentStatus
+  - expiresAt: DateTime
+  - expiredAt: DateTime
+  - paidAt: DateTime
+  - title: String
+  - description: String
+  - categoryId: Int
   - scheduledAt: DateTime
   - createdAt: DateTime
   - updatedAt: DateTime
   --
-  + buatTiket()
-  + jadwalkanTiket()
-  + assignTeknisi()
+  + createTicket()
+  + assignTicket()
+  + scheduleTicket()
   + updateStatus()
-  + tambahLampiran()
-  + tutupTiket()
+  + getAllTickets()
+  + getMyTickets()
+  + createSupportTicket()
+  + getMySupportTickets()
+  + markTicketPaid()
 }
 
 class "«enumeration»\nTicketStatus" as TicketStatus {
@@ -32,5 +41,15 @@ class "«enumeration»\nTicketStatus" as TicketStatus {
   CLOSED
 }
 
+class "«enumeration»\nTicketPaymentStatus" as TicketPaymentStatus {
+  PENDING_PAYMENT
+  PAID
+  EXPIRED
+}
+
 Ticket ..> TicketStatus
+Ticket ..> TicketPaymentStatus
+Ticket --> Order
+Ticket --> User
+Ticket --> TicketCategory
 @enduml

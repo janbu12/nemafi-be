@@ -2,21 +2,21 @@
 title Detail Class TicketSurveyItem
 
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
 hide circle
 
 class TicketSurveyItem {
-  - id: Int
-  - ticketSurveyId: Int
   - inventoryItemId: Int
-  - type: SurveyItemType
+  - name: String
   - quantity: Int
-  - satuan: String
-  - catatan: String
+  - unit: String
+  - notes: String
+  - type: SurveyItemType
   --
-  + tambahItem()
-  + ubahJumlah()
-  + ubahTipeItem()
-  + hapusItem()
+  + completeSurvey()
+  + reportSurveyActual()
+  + updateSurvey()
 }
 
 class "«enumeration»\nSurveyItemType" as SurveyItemType {
@@ -24,5 +24,14 @@ class "«enumeration»\nSurveyItemType" as SurveyItemType {
   ACTUAL
 }
 
+note right of TicketSurveyItem
+Pada kode saat ini item survey
+belum menjadi tabel terpisah.
+Data disimpan pada TicketSurvey
+plannedItems dan actualItems.
+end note
+
 TicketSurveyItem ..> SurveyItemType
+TicketSurveyItem --> TicketSurvey
+TicketSurveyItem --> InventoryItem
 @enduml

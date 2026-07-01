@@ -1,0 +1,49 @@
+@startuml
+title SKPL-F-02 Sequence Diagram Melakukan Pembayaran
+
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+hide footbox
+
+actor Pelanggan
+participant ":Order" as Order
+participant ":BillingInvoice" as BillingInvoice
+participant ":Payment" as Payment
+participant "Midtrans" as Midtrans
+participant ":PackageHistory" as PackageHistory
+
+Pelanggan -> Order: getOrderById(orderId)
+activate Order
+Order --> Pelanggan: detailOrder
+deactivate Order
+
+Pelanggan -> Payment: createPaymentToken(orderId, dataPelanggan)
+activate Payment
+Payment -> Order: getOrderById(orderId)
+activate Order
+Order --> Payment: orderREVIEW_APPROVED
+deactivate Order
+Payment -> Midtrans: requestSnapToken(dataTransaksi)
+activate Midtrans
+Midtrans --> Payment: snapToken, redirectUrl
+deactivate Midtrans
+Payment -> Order: saveMidtransTransaction(orderId, token, midtransOrderId, redirectUrl)
+activate Order
+Order --> Payment: transaksiTersimpan
+deactivate Order
+Payment --> Pelanggan: snapToken, redirectUrl
+deactivate Payment
+
+Pelanggan -> Midtrans: menyelesaikanPembayaran()
+activate Midtrans
+Midtrans -> Payment: verifyPaymentNotification(notificationBody)
+activate Payment
+Payment -> Order: updateOrderStatus(orderId, SURVEY_SCHEDULED)
+Payment -> BillingInvoice: markLatestInvoicePaid(userId)
+Payment -> PackageHistory: verifyPaymentNotification()
+Payment --> Midtrans: pembayaranTerverifikasi
+deactivate Payment
+Midtrans --> Pelanggan: statusPembayaran
+deactivate Midtrans
+
+@enduml
