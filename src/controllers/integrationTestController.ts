@@ -34,6 +34,36 @@ async function testR2(_req: Request, res: Response, next: Function) {
   }
 }
 
+async function testXendit(_req: Request, res: Response, next: Function) {
+  try {
+    const settings = await prismaClient.appSetting.findMany({
+      where: {
+        key: { in: ['XENDIT_SECRET_KEY'] },
+      },
+    });
+    const getValue = (key: string) => settings.find((s) => s.key === key)?.value || '';
+    const secretKey = getValue('XENDIT_SECRET_KEY') || process.env.XENDIT_SECRET_KEY;
+
+    if (!secretKey) {
+      throw { status: 400, message: 'Lengkapi konfigurasi Xendit terlebih dahulu.' };
+    }
+
+    const auth = Buffer.from(`${secretKey}:`).toString('base64');
+
+    const response = await fetch(`https://api.xendit.co/balance`, {
+      headers: { Authorization: `Basic ${auth}` },
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw { status: 502, message: text || 'Gagal menghubungi Xendit.' };
+    }
+    return success(res, { ok: true }, 'Xendit terhubung');
+  } catch (e: any) {
+    if (e?.status) return next(e);
+    next({ status: 500, message: e?.message || 'Gagal menguji koneksi Xendit.' });
+  }
+}
+
 async function testMidtrans(_req: Request, res: Response, next: Function) {
   try {
     const settings = await prismaClient.appSetting.findMany({
@@ -97,6 +127,7 @@ async function testGemini(_req: Request, res: Response, next: Function) {
 
 export default {
   testR2,
+  testXendit,
   testMidtrans,
   testGemini,
 };

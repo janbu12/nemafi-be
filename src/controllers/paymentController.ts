@@ -59,7 +59,8 @@ export async function createInvoicePaymentToken(req: Request, res: Response) {
 export async function handlePaymentNotification(req: Request, res: Response) {
     try {
         console.log('[WEBHOOK] Received notification body:', JSON.stringify(req.body));
-        const result = await paymentService.verifyPaymentNotification(req.body);
+        const callbackToken = req.headers['x-callback-token'] as string | undefined;
+        const result = await paymentService.verifyPaymentNotification(req.body, callbackToken);
         console.log('[WEBHOOK] Processing result:', JSON.stringify(result));
         
         // Always return 200 OK to Midtrans to acknowledge receipt

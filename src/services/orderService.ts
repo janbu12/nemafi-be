@@ -223,6 +223,7 @@ async function saveMidtransTransaction(orderId: number, transactionId: string, o
     const updatedOrder = await prismaClient.order.update({
         where: { id: orderId },
         data: {
+            paymentGateway: 'midtrans',
             midtransTransactionId: transactionId,
             midtransOrderId: orderId_midtrans,
             redirectUrl,
@@ -237,6 +238,39 @@ async function saveMidtransTransaction(orderId: number, transactionId: string, o
     });
 
     return { ...updatedOrder, redirectUrl, midtransTransactionId: transactionId, midtransOrderId: orderId_midtrans };
+}
+
+// Save Xendit transaction details
+async function saveXenditTransaction(orderId: number, invoiceId: string, externalId: string, redirectUrl: string) {
+    const order = await prismaClient.order.findUnique({
+        where: { id: orderId }
+    });
+
+    console.log('Saving Xendit transaction for order:', orderId, 'Invoice ID:', invoiceId, 'External ID:', externalId, 'Redirect URL:', redirectUrl);
+
+    if (!order) throw { status: 404, message: 'Order not found' };
+    if (order.status !== 'REVIEW_APPROVED') {
+        throw { status: 400, message: 'Order must be in REVIEW_APPROVED status to process payment' };
+    }
+
+    const updatedOrder = await prismaClient.order.update({
+        where: { id: orderId },
+        data: {
+            paymentGateway: 'xendit',
+            xenditInvoiceId: invoiceId,
+            xenditExternalId: externalId,
+            redirectUrl,
+        },
+        include: {
+            items: {
+                include: {
+                    package: true
+                }
+            }
+        }
+    });
+
+    return { ...updatedOrder, redirectUrl, xenditInvoiceId: invoiceId, xenditExternalId: externalId };
 }
 
 // Get all pending review orders (for admin)
@@ -268,5 +302,6 @@ export default {
     rejectOrder,
     updateOrderStatus,
     saveMidtransTransaction,
+    saveXenditTransaction,
     getPendingReviewOrders
 };

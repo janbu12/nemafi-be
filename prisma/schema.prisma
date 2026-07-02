@@ -156,10 +156,13 @@ model Order {
   total                 Float
   items                 OrderItem[]
   tickets               Ticket[]
-  // Payment fields for Midtrans
+  // Payment fields
+  paymentGateway        String? // 'midtrans' or 'xendit'
   midtransTransactionId String?     @unique
   midtransOrderId       String?     @unique
-  redirectUrl           String? // Redirect URL dari Midtrans
+  xenditInvoiceId       String?     @unique
+  xenditExternalId      String?     @unique
+  redirectUrl           String? // Redirect URL dari Payment Gateway
   // Admin review fields
   reviewedBy            Int? // User ID dari admin yang review
   reviewNotes           String? // Catatan dari admin
