@@ -37,6 +37,9 @@ async function createPaymentToken(orderId: number, customerName: string, custome
         const midtransOrderId = `ORDER-${orderId}-${Date.now()}`;
 
         // Prepare transaction parameter
+        const notificationUrl = process.env.BACKEND_PUBLIC_URL
+            ? `${process.env.BACKEND_PUBLIC_URL}/api/payment/notification`
+            : 'https://nemafi-be.mzn.my.id/api/payment/notification';
         const transactionData = {
             transaction_details: {
                 order_id: midtransOrderId,
@@ -57,7 +60,8 @@ async function createPaymentToken(orderId: number, customerName: string, custome
                 finish: `${process.env.APP_URL || 'http://localhost:3000'}/payment/finish/${orderId}`,
                 unfinish: `${process.env.APP_URL || 'http://localhost:3000'}/payment/unfinish/${orderId}`,
                 error: `${process.env.APP_URL || 'http://localhost:3000'}/payment/error/${orderId}`
-            }
+            },
+            custom_notification: [notificationUrl]
         };
 
         // Create Basic Auth header
@@ -121,6 +125,9 @@ async function createInvoicePaymentToken(userId: number, customerName: string, c
 
         const midtransOrderId = `INVOICE-${invoice.id}-${Date.now()}`;
 
+        const notificationUrlInvoice = process.env.BACKEND_PUBLIC_URL
+            ? `${process.env.BACKEND_PUBLIC_URL}/api/payment/notification`
+            : 'https://nemafi-be.mzn.my.id/api/payment/notification';
         const transactionData = {
             transaction_details: {
                 order_id: midtransOrderId,
@@ -137,6 +144,7 @@ async function createInvoicePaymentToken(userId: number, customerName: string, c
                 quantity: 1,
                 name: `Tagihan Internet Bulan ${new Date(invoice.periodStart).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
             }],
+            custom_notification: [notificationUrlInvoice]
         };
 
         const { serverKey, baseUrl } = await getMidtransConfig();
