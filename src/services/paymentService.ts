@@ -37,6 +37,7 @@ async function createPaymentToken(orderId: number, customerName: string, custome
         const midtransOrderId = `ORDER-${orderId}-${Date.now()}`;
 
         // Prepare transaction parameter
+        // Prepare transaction parameter
         const notificationUrl = process.env.BACKEND_PUBLIC_URL
             ? `${process.env.BACKEND_PUBLIC_URL}/api/payment/notification`
             : 'https://nemafi-be.mzn.my.id/api/payment/notification';
@@ -60,8 +61,7 @@ async function createPaymentToken(orderId: number, customerName: string, custome
                 finish: `${process.env.APP_URL || 'http://localhost:3000'}/payment/finish/${orderId}`,
                 unfinish: `${process.env.APP_URL || 'http://localhost:3000'}/payment/unfinish/${orderId}`,
                 error: `${process.env.APP_URL || 'http://localhost:3000'}/payment/error/${orderId}`
-            },
-            custom_notification: [notificationUrl]
+            }
         };
 
         // Create Basic Auth header
@@ -76,7 +76,8 @@ async function createPaymentToken(orderId: number, customerName: string, custome
             method: 'POST',
             headers: {
                 'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Override-Notification': notificationUrl
             },
             body: JSON.stringify(transactionData)
         });
@@ -143,8 +144,7 @@ async function createInvoicePaymentToken(userId: number, customerName: string, c
                 price: Math.ceil(invoice.amount),
                 quantity: 1,
                 name: `Tagihan Internet Bulan ${new Date(invoice.periodStart).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
-            }],
-            custom_notification: [notificationUrlInvoice]
+            }]
         };
 
         const { serverKey, baseUrl } = await getMidtransConfig();
@@ -157,7 +157,8 @@ async function createInvoicePaymentToken(userId: number, customerName: string, c
             method: 'POST',
             headers: {
                 'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Override-Notification': notificationUrlInvoice
             },
             body: JSON.stringify(transactionData)
         });
