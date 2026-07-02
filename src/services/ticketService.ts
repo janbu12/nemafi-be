@@ -296,7 +296,7 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
 
     await addHistory(updated.id, `Status changed to ${status}`, undefined, technician);
 
-    if (['RESOLVED', 'CLOSED'].includes(status)) {
+    if (['IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status)) {
       await provisionPppProfileFromTicket(updated.id);
     }
 

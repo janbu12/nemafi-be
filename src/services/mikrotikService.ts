@@ -75,6 +75,20 @@ async function addPppSecret(profile: Profile & { router: Router }) {
   }
 
   return withRouterApi(profile.routerId, async (api: RouterOSApi) => {
+    const existing = await findPppSecret(api, profile.pppUsername!);
+    if (existing) {
+      const updateCommand = [
+        '/ppp/secret/set',
+        `=.id=${getRouterOSId(existing)}`,
+        `=password=${profile.pppPassword}`,
+      ];
+      if (profile.pppProfile?.trim()) {
+        updateCommand.push(`=profile=${profile.pppProfile.trim()}`);
+      }
+      await api.send(updateCommand);
+      return;
+    }
+
     const command = [
       '/ppp/secret/add',
       `=name=${profile.pppUsername}`,
