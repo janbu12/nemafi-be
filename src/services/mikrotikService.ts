@@ -147,6 +147,15 @@ async function disablePppSecret(username: string, routerId: number) {
     const secret = await findPppSecret(api, username);
     if (!secret) throw { status: 404, message: `PPP user '${username}' not found.` };
     await api.send(['/ppp/secret/disable', `=.id=${getRouterOSId(secret)}`]);
+
+    try {
+      const activeConnections = await api.send(['/ppp/active/print', `?name=${username}`]);
+      for (const conn of activeConnections) {
+        await api.send(['/ppp/active/remove', `=.id=${getRouterOSId(conn)}`]);
+      }
+    } catch (err) {
+      console.warn(`[Mikrotik] Failed to remove active connection for ${username}`);
+    }
   });
 }
 
