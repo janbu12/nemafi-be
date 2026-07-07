@@ -1,7 +1,7 @@
 import { prismaClient } from '../application/prisma.js';
 import bcrypt from 'bcryptjs';
 import { createUserValidation, resetPasswordValidation, updateUserValidation, adminCreateCustomerValidation } from '../validation/userValidation.js';
-import { toUserDto } from '../models/userModel.js';
+import { toUserDto } from '../utils/userDto.js';
 import { Role, User } from '@prisma/client';
 
 

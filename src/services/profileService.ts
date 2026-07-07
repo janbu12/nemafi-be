@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { prismaClient } from '../application/prisma.js';
-import { toUserDto } from '../models/userModel.js';
+import { toUserDto } from '../utils/userDto.js';
 import {
   updateEmailValidation,
   updatePasswordValidation,
