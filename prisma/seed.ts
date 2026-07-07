@@ -350,7 +350,7 @@ async function main() {
       fullAddress: 'Pasteur, Sukajadi, Kota Bandung, Jawa Barat',
       latitude: -6.8893,
       longitude: 107.5952,
-      radius_m: 10000,
+      radius_m: 1000,
     },
     {
       province: 'Jawa Barat',
@@ -360,7 +360,7 @@ async function main() {
       fullAddress: 'Dago, Coblong, Kota Bandung, Jawa Barat',
       latitude: -6.8896,
       longitude: 107.6191,
-      radius_m: 10000,
+      radius_m: 1000,
     },
     {
       province: 'Jawa Barat',
@@ -370,7 +370,7 @@ async function main() {
       fullAddress: 'Ciumbuleuit, Cidadap, Kota Bandung, Jawa Barat',
       latitude: -6.8722,
       longitude: 107.6048,
-      radius_m: 10000,
+      radius_m: 1000,
     },
     {
       province: 'Jawa Barat',
@@ -380,7 +380,7 @@ async function main() {
       fullAddress: 'Cisaranten Kulon, Arcamanik, Kota Bandung, Jawa Barat',
       latitude: -6.9141,
       longitude: 107.6717,
-      radius_m: 10000,
+      radius_m: 1000,
     },
   ];
 

@@ -13,4 +13,5 @@ publicRouter.get('/health', (_req, res) => {
 });
 
 publicRouter.post('/covered-areas/check', coveredAreaController.check);
+publicRouter.get('/covered-areas', coveredAreaController.getAllAreas);
 publicRouter.post('/recommendations/package', recommendationController.getRecommendation);
