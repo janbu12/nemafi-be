@@ -9,6 +9,9 @@ const envSchema = z.object({
     JWT_SECRET: z.string().min(16),
     GEMINI_API_KEY: z.string().optional().default(''),
     GEMINI_MODEL: z.string().optional().default(''),
+    VAPID_PUBLIC_KEY: z.string().optional().default(''),
+    VAPID_PRIVATE_KEY: z.string().optional().default(''),
+    VAPID_SUBJECT: z.string().optional().default('mailto:admin@nemafi.local'),
 });
 
 

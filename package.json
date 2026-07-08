@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "lint": "echo 'Add ESLint if you want'",
+    "generate:vapid": "node -e \"import webPush from 'web-push'; console.log(webPush.generateVAPIDKeys())\"",
     "render:plantuml": "node scripts/render-plantuml.mjs",
     "render:class-diagram": "node scripts/render-plantuml.mjs docs/plantuml/class-diagram-gabungan.puml"
   },
@@ -33,6 +34,7 @@
     "routeros-client": "^1.1.1",
     "socket.io": "^4.8.1",
     "ssh2": "^1.15.0",
+    "web-push": "^3.6.7",
     "winston": "^3.17.0",
     "zod": "^4.1.0"
   },
@@ -42,6 +44,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.9",
     "@types/ssh2": "^1.15.5",
+    "@types/web-push": "^3.6.4",
     "nodemon": "^3.1.10",
     "plantuml-encoder": "^1.4.0",
     "prisma": "^6.14.0",

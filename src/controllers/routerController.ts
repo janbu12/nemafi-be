@@ -5,6 +5,7 @@ import mikrotikService from '../services/mikrotikService.js';
 import jwt from 'jsonwebtoken';
 import http from 'http';
 import { prismaClient } from '../application/prisma.js';
+import operationalNotificationService from '../services/operationalNotificationService.js';
 
 
 async function create(req: Request, res: Response, next: NextFunction) {
@@ -60,8 +61,17 @@ async function testConnection(req: Request, res: Response, next: NextFunction) {
   try {
     const id = Number(req.params.id);
     const result = await mikrotikService.testConnection(id);
+    const router = await prismaClient.router.findUnique({ where: { id } });
+    if (router) {
+      operationalNotificationService.notifyRouterStatus(router.id, router.name, 'online');
+    }
     return success(res, result, result.message);
   } catch (e) {
+    const id = Number(req.params.id);
+    const router = Number.isFinite(id) ? await prismaClient.router.findUnique({ where: { id } }).catch(() => null) : null;
+    if (router) {
+      operationalNotificationService.notifyRouterStatus(router.id, router.name, 'offline');
+    }
     next(e);
   }
 }

@@ -24,6 +24,7 @@ model User {
   assignedTickets Ticket[]        @relation("AssignedTickets")
   memberTickets   TicketMember[]
   ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
+  pushSubscriptions PushSubscription[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -55,6 +56,20 @@ model TokenBlacklist {
   id        Int      @id @default(autoincrement())
   token     String   @unique
   createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  endpoint  String   @unique
+  p256dhKey String
+  authKey   String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 enum Role {

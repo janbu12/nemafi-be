@@ -3,6 +3,7 @@ import { assignTicketValidation, completeSurveyValidation, createTicketValidatio
 import { emitTicketAssignmentUpdated, emitTicketMembersUpdated, emitTicketUpdated } from '../application/socket.js';
 import { Prisma, Role, User } from '@prisma/client';
 import mikrotikService from './mikrotikService.js';
+import pushSubscriptionService from './pushSubscriptionService.js';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
 
@@ -154,6 +155,16 @@ async function createTicket(data: any, actor?: User) {
 
   await addHistory(ticket.id, 'Ticket created', undefined, actor);
   emitTicketUpdated({ ticketId: ticket.id, type: 'created' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Tiket baru',
+      body: `Tiket #${ticket.id} dibuat: ${ticket.title}`,
+      url: `/admin/tickets?id=${ticket.id}`,
+      tag: `ticket-created-${ticket.id}`,
+      data: { type: 'ticket-created', ticketId: ticket.id },
+    }
+  );
 
   return ticket;
 }
@@ -187,6 +198,16 @@ async function assignTicket(ticketId: number, data: any, actor?: User) {
     type: 'assigned',
   });
   emitTicketUpdated({ ticketId: ticket.id, type: 'assigned' });
+  pushSubscriptionService.notifyAsync(
+    { userIds: [technician.id] },
+    {
+      title: 'Tiket ditugaskan',
+      body: `Anda ditugaskan ke tiket #${ticket.id}.`,
+      url: `/technician`,
+      tag: `ticket-assigned-${ticket.id}`,
+      data: { type: 'ticket-assigned', ticketId: ticket.id },
+    }
+  );
 
   return ticket;
 }
@@ -266,6 +287,16 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
     scheduledAt: ticket.scheduledAt,
   });
   emitTicketUpdated({ ticketId: ticket.id, type: 'scheduled' });
+  pushSubscriptionService.notifyAsync(
+    { userIds: [leaderId] },
+    {
+      title: 'Jadwal tiket diperbarui',
+      body: `Tiket #${ticket.id} dijadwalkan pada ${ticket.scheduledAt?.toISOString()}.`,
+      url: `/technician/schedule`,
+      tag: `ticket-scheduled-${ticket.id}`,
+      data: { type: 'ticket-scheduled', ticketId: ticket.id },
+    }
+  );
 
   return ticket;
 }
@@ -390,6 +421,16 @@ async function createSupportTicket(user: User, data: any) {
 
   await addHistory(ticket.id, 'Ticket created', 'Tiket dukungan dibuat pelanggan', user);
   emitTicketUpdated({ ticketId: ticket.id, type: 'support-created' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Tiket gangguan baru',
+      body: `${user.fullname} membuat tiket: ${ticket.title}`,
+      url: `/admin/tickets?id=${ticket.id}`,
+      tag: `support-ticket-${ticket.id}`,
+      data: { type: 'support-ticket-created', ticketId: ticket.id, userId: user.id },
+    }
+  );
 
   return prismaClient.ticket.findUnique({
     where: { id: ticket.id },
@@ -547,6 +588,23 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
 
   emitTicketUpdated({ ticketId: ticket.id, type: 'survey-completed' });
   emitTicketUpdated({ ticketId: installationTicket.id, type: 'installation-created' });
+  pushSubscriptionService.notifyAsync(
+    {
+      roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN],
+      userIds: installationTicket.technicianId ? [installationTicket.technicianId] : [],
+    },
+    {
+      title: 'Hasil survey tersimpan',
+      body: `Tiket instalasi #${installationTicket.id} dibuat dari survey #${ticket.id}.`,
+      url: installationTicket.technicianId ? '/technician' : `/admin/tickets?id=${installationTicket.id}`,
+      tag: `survey-completed-${ticket.id}`,
+      data: {
+        type: 'survey-completed',
+        surveyTicketId: ticket.id,
+        installationTicketId: installationTicket.id,
+      },
+    }
+  );
   return installationTicket;
 }
 
@@ -600,6 +658,16 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
 
   await addHistory(ticket.id, 'Installation usage reported', 'Penggunaan barang aktual telah dilaporkan', technician);
   emitTicketUpdated({ ticketId: ticket.id, type: 'actual-reported' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN], userIds: [technician.id] },
+    {
+      title: 'Hasil pengerjaan dilaporkan',
+      body: `Teknisi ${technician.fullname} melaporkan hasil tiket #${ticket.id}.`,
+      url: `/admin/tickets?id=${ticket.id}`,
+      tag: `actual-reported-${ticket.id}`,
+      data: { type: 'actual-reported', ticketId: ticket.id, technicianId: technician.id },
+    }
+  );
 
   return updated;
 }
@@ -671,6 +739,18 @@ async function updateTicketMembers(ticketId: number, actor: User, data: any) {
     removeIds,
   });
   emitTicketUpdated({ ticketId, type: 'members-updated' });
+  if (addIds.length > 0) {
+    pushSubscriptionService.notifyAsync(
+      { userIds: addIds },
+      {
+        title: 'Anda ditambahkan ke tiket',
+        body: `Anda menjadi anggota pekerjaan tiket #${ticketId}.`,
+        url: '/technician',
+        tag: `ticket-member-${ticketId}`,
+        data: { type: 'ticket-member-added', ticketId, technicianIds: addIds },
+      }
+    );
+  }
 
   return prismaClient.ticket.findUnique({
     where: { id: ticketId },
@@ -819,6 +899,16 @@ async function markTicketPaid(orderId: number) {
     await addHistory(created.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
     await addHistory(created.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
     emitTicketUpdated({ ticketId: created.id, type: 'payment-completed' });
+    pushSubscriptionService.notifyAsync(
+      { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+      {
+        title: 'Pembayaran berhasil',
+        body: `Pembayaran order #${orderId} berhasil dan tiket survey #${created.id} dibuat.`,
+        url: `/admin/tickets?id=${created.id}`,
+        tag: `order-paid-${orderId}`,
+        data: { type: 'order-paid', orderId, ticketId: created.id },
+      }
+    );
     return created;
   }
 
@@ -836,6 +926,16 @@ async function markTicketPaid(orderId: number) {
   await addHistory(updated.id, 'Payment completed', 'Status pembayaran tiket menjadi PAID', undefined);
   await addHistory(updated.id, 'Status changed to CLOSED', 'Tiket registrasi diselesaikan setelah pembayaran', undefined);
   emitTicketUpdated({ ticketId: updated.id, type: 'payment-completed' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Pembayaran berhasil',
+      body: `Pembayaran order #${orderId} berhasil.`,
+      url: `/admin/transactions/${orderId}`,
+      tag: `order-paid-${orderId}`,
+      data: { type: 'order-paid', orderId, ticketId: updated.id },
+    }
+  );
 
   if (existingSurvey) return existingSurvey;
 
@@ -853,6 +953,16 @@ async function markTicketPaid(orderId: number) {
   await addHistory(surveyTicket.id, 'Ticket created', 'Tiket survey dibuat setelah pembayaran', undefined);
   await addHistory(updated.id, 'Survey ticket created', `Tiket survey #${surveyTicket.id} dibuat`, undefined);
   emitTicketUpdated({ ticketId: surveyTicket.id, type: 'survey-created' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Tiket survey baru',
+      body: `Tiket survey #${surveyTicket.id} dibuat setelah pembayaran order #${orderId}.`,
+      url: `/admin/tickets?id=${surveyTicket.id}`,
+      tag: `survey-ticket-${surveyTicket.id}`,
+      data: { type: 'survey-ticket-created', orderId, ticketId: surveyTicket.id },
+    }
+  );
   return surveyTicket;
 }
 

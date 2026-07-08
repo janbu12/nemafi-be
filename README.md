@@ -53,6 +53,19 @@ Backend API untuk aplikasi nemafi.
 - `npm run dev` — Menjalankan server dalam mode development.
 - `npm run build` — Build aplikasi untuk production.
 - `npm start` — Menjalankan server hasil build.
+- `npm run generate:vapid` — Membuat pasangan VAPID key untuk Web Push.
+
+## Environment Web Push
+
+Tambahkan konfigurasi berikut pada `.env` backend agar Web Push aktif:
+
+```env
+VAPID_PUBLIC_KEY=isi_public_key
+VAPID_PRIVATE_KEY=isi_private_key
+VAPID_SUBJECT=mailto:admin@domain-anda.com
+```
+
+Jika `VAPID_PUBLIC_KEY` atau `VAPID_PRIVATE_KEY` kosong, endpoint subscription tetap tersedia tetapi pengiriman push akan dilewati agar proses bisnis utama tidak terganggu.
 
 ## Struktur Folder
 

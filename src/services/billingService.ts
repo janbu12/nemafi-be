@@ -1,7 +1,9 @@
 import { prismaClient } from '../application/prisma.js';
 import { emitBillingUpdated } from '../application/socket.js';
 import mikrotikService from './mikrotikService.js';
+import pushSubscriptionService from './pushSubscriptionService.js';
 import cron from 'node-cron';
+import { Role } from '@prisma/client';
 
 type BillingSettingsInput = {
   automationEnabled?: boolean;
@@ -49,6 +51,16 @@ async function markLatestInvoicePaid(userId: number) {
     data: { status: 'PAID', paidAt: new Date() },
   });
   emitBillingUpdated({ userId, invoiceId: invoice.id, type: 'paid' });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Pembayaran berhasil',
+      body: `Pembayaran invoice #${invoice.id} telah diterima.`,
+      url: `/admin/transactions/${invoice.id}`,
+      tag: `invoice-paid-${invoice.id}`,
+      data: { type: 'billing-paid', invoiceId: invoice.id, userId },
+    }
+  );
 
   const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
   if (profile && !profile.isPppActive) {
@@ -74,6 +86,16 @@ async function markLatestInvoicePaid(userId: number) {
       where: { id: lastSuspension.id },
       data: { resumedAt: new Date() },
     });
+    pushSubscriptionService.notifyAsync(
+      { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN] },
+      {
+        title: 'Layanan direaktivasi',
+        body: `Layanan pelanggan #${userId} aktif kembali setelah pembayaran.`,
+        url: `/admin/customers/${userId}`,
+        tag: `service-reactivated-${userId}`,
+        data: { type: 'service-reactivated', userId },
+      }
+    );
   }
 
   return invoice;
@@ -191,6 +213,16 @@ async function applyOverdueSuspension(graceDays = 3) {
     data: { status: 'OVERDUE' },
   });
   emitBillingUpdated({ type: 'overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) });
+  pushSubscriptionService.notifyAsync(
+    { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+    {
+      title: 'Tagihan jatuh tempo',
+      body: `${overdueInvoices.length} tagihan melewati masa tenggang.`,
+      url: '/admin/transactions',
+      tag: 'billing-overdue',
+      data: { type: 'billing-overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) },
+    }
+  );
 
   for (const userId of userIds) {
     const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
@@ -219,6 +251,16 @@ async function applyOverdueSuspension(graceDays = 3) {
           suspendedAt: now,
         },
       });
+      pushSubscriptionService.notifyAsync(
+        { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN] },
+        {
+          title: 'Layanan disuspend otomatis',
+          body: `Layanan pelanggan #${userId} diisolasi karena tunggakan.`,
+          url: `/admin/customers/${userId}`,
+          tag: `service-suspended-${userId}`,
+          data: { type: 'service-suspended', userId },
+        }
+      );
     }
   }
 
@@ -464,6 +506,16 @@ async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVER
             suspendedAt: now,
           },
         });
+        pushSubscriptionService.notifyAsync(
+          { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN] },
+          {
+            title: 'Layanan disuspend',
+            body: `Layanan pelanggan #${userId} diisolasi karena status invoice OVERDUE.`,
+            url: `/admin/customers/${userId}`,
+            tag: `service-suspended-${userId}`,
+            data: { type: 'service-suspended', userId, invoiceId: id },
+          }
+        );
       }
     } else if (status === 'PAID') {
       await prismaClient.profile.update({
@@ -485,6 +537,16 @@ async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVER
           where: { id: openSuspension.id },
           data: { resumedAt: now },
         });
+        pushSubscriptionService.notifyAsync(
+          { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN] },
+          {
+            title: 'Layanan direaktivasi',
+            body: `Layanan pelanggan #${userId} aktif kembali.`,
+            url: `/admin/customers/${userId}`,
+            tag: `service-reactivated-${userId}`,
+            data: { type: 'service-reactivated', userId, invoiceId: id },
+          }
+        );
       }
     } else if (status === 'UNPAID') {
       await prismaClient.profile.update({
