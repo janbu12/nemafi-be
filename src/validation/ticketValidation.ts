@@ -45,24 +45,6 @@ const surveyItemSchema = z.object({
   quantity: z.number().positive(),
 });
 
-export const completeSurveyValidation = z.object({
-  items: z.array(surveyItemSchema).min(1),
-  notes: z.string().optional(),
-  technicianId: z.number().int().positive().optional(),
-  routerId: z.number().int().positive().optional(),
-});
-
-export const surveyActualValidation = z.object({
-  items: z.array(surveyItemSchema).min(1),
-  notes: z.string().optional(),
-});
-
-export const updateSurveyValidation = z.object({
-  items: z.array(surveyItemSchema).min(1),
-  notes: z.string().optional(),
-  routerId: z.number().int().positive().optional(),
-});
-
 const attachmentSchema = z
   .object({
     filename: z.string().min(1),
@@ -73,6 +55,25 @@ const attachmentSchema = z
   .refine((data) => data.dataUrl || data.url, {
     message: 'Attachment must include dataUrl or url',
   });
+
+export const completeSurveyValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+  technicianId: z.number().int().positive().optional(),
+  routerId: z.number().int().positive().optional(),
+});
+
+export const surveyActualValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+  attachments: z.array(attachmentSchema).max(5).optional(),
+});
+
+export const updateSurveyValidation = z.object({
+  items: z.array(surveyItemSchema).min(1),
+  notes: z.string().optional(),
+  routerId: z.number().int().positive().optional(),
+});
 
 export const supportTicketValidation = z.object({
   subject: z.string().min(3).max(100),

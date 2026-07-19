@@ -385,6 +385,7 @@ async function getMyTickets(technician: User) {
           category: true,
           installationSurvey: true,
           technician: true,
+          attachments: true,
           members: { include: { technician: true } },
           history: {
             select: { action: true, createdAt: true },
@@ -659,7 +660,7 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
 
   const ticket = await prismaClient.ticket.findFirst({
     where: { id: ticketId, technicianId: technician.id },
-    include: { category: true, order: true },
+    include: { category: true, order: true, attachments: true },
   });
 
   if (!ticket) {
@@ -667,6 +668,12 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
   }
   if (ticket.category?.name !== 'instalasi') {
     throw { status: 400, message: 'Ticket is not an installation ticket' };
+  }
+
+  const hasExistingAttachment = ticket.attachments.length > 0;
+  const hasIncomingAttachment = Boolean(validated.attachments?.length);
+  if (!hasExistingAttachment && !hasIncomingAttachment) {
+    throw { status: 400, message: 'Dokumentasi foto wajib ditambahkan.' };
   }
 
   const inventoryIds = validated.items.map((item) => item.inventoryItemId);
@@ -701,6 +708,17 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
       notes: validated.notes ?? surveyRecord.notes,
     },
   });
+
+  if (validated.attachments?.length) {
+    await prismaClient.ticketAttachment.createMany({
+      data: validated.attachments.map((file) => ({
+        ticketId: ticket.id,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        dataUrl: file.dataUrl || file.url || '',
+      })),
+    });
+  }
 
   await addHistory(ticket.id, 'Installation usage reported', 'Penggunaan barang aktual telah dilaporkan', technician);
   emitTicketUpdated({ ticketId: ticket.id, type: 'actual-reported' });

@@ -51,7 +51,8 @@ web.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-web.use(express.json());
+web.use(express.json({ limit: '10mb' }));
+web.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 web.use('/api', router);
