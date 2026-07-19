@@ -1,7 +1,8 @@
 import { prismaClient } from "../application/prisma.js";
 import { emitOrderPending, emitOrderReviewed } from "../application/socket.js";
-import { Prisma, Status } from "@prisma/client";
+import { Prisma, Role, Status } from "@prisma/client";
 import ticketService from "./ticketService.js";
+import pushSubscriptionService from "./pushSubscriptionService.js";
 
 export type OrderWithDetails = Prisma.OrderGetPayload<{
     include: {
@@ -149,6 +150,26 @@ async function approveOrder(orderId: number, adminId: number, notes?: string) {
     }
 
     emitOrderReviewed(updatedOrder);
+    pushSubscriptionService.notifyAsync(
+        { userIds: [updatedOrder.userId] },
+        {
+            title: 'Pendaftaran disetujui',
+            body: 'Pendaftaran layanan internet Anda telah disetujui. Silakan lanjutkan pembayaran.',
+            url: '/dashboard/billing',
+            tag: `order-approved-${updatedOrder.id}`,
+            data: { type: 'order-approved', orderId: updatedOrder.id, userId: updatedOrder.userId },
+        }
+    );
+    pushSubscriptionService.notifyAsync(
+        { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+        {
+            title: 'Pendaftaran disetujui',
+            body: `Order #${updatedOrder.id} telah disetujui.`,
+            url: `/admin/transactions`,
+            tag: `order-approved-admin-${updatedOrder.id}`,
+            data: { type: 'order-approved-admin', orderId: updatedOrder.id, userId: updatedOrder.userId },
+        }
+    );
     return updatedOrder;
 }
 
@@ -181,6 +202,16 @@ async function rejectOrder(orderId: number, adminId: number, notes: string) {
     });
 
     emitOrderReviewed(updatedOrder);
+    pushSubscriptionService.notifyAsync(
+        { userIds: [updatedOrder.userId] },
+        {
+            title: 'Pendaftaran ditolak',
+            body: notes || 'Pendaftaran layanan internet Anda belum dapat disetujui.',
+            url: '/dashboard',
+            tag: `order-rejected-${updatedOrder.id}`,
+            data: { type: 'order-rejected', orderId: updatedOrder.id, userId: updatedOrder.userId },
+        }
+    );
     return updatedOrder;
 }
 

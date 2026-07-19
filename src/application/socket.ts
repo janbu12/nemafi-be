@@ -123,3 +123,13 @@ export function emitBillingUpdated(payload: any) {
   if (!ioInstance) return;
   ioInstance.emit('billing:updated', payload);
 }
+
+export function emitNotificationCreated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('notifications:new', payload);
+}
+
+export function emitNotificationCountUpdated(payload: any) {
+  if (!ioInstance) return;
+  ioInstance.emit('notifications:count-updated', payload);
+}

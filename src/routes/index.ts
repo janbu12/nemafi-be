@@ -20,6 +20,7 @@ import { inventoryCategoryRoutes } from './inventoryCategoryRoutes.js';
 import { billingRoutes } from './billingRoutes.js';
 import { uploadRoutes } from './uploadRoutes.js';
 import { pushSubscriptionRoutes } from './pushSubscriptionRoutes.js';
+import { notificationRoutes } from './notificationRoutes.js';
 
 
 export const router = Router();
@@ -41,6 +42,7 @@ router.use('/routers', routerRoutes);
 router.use('/orders', orderRoutes);
 router.use('/payment', paymentRoutes);
 router.use('/push', pushSubscriptionRoutes);
+router.use('/notifications', notificationRoutes);
 router.use(billingRoutes);
 router.use(uploadRoutes);
 

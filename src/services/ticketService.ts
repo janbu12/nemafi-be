@@ -217,6 +217,7 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
 
   const existingTicket = await prismaClient.ticket.findUnique({
     where: { id: ticketId },
+    include: { order: true },
   });
   if (!existingTicket) {
     throw { status: 404, message: 'Ticket not found' };
@@ -297,6 +298,16 @@ async function scheduleTicket(ticketId: number, data: any, actor?: User) {
       data: { type: 'ticket-scheduled', ticketId: ticket.id },
     }
   );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [existingTicket.order.userId] },
+    {
+      title: 'Jadwal kunjungan diperbarui',
+      body: `Tiket #${ticket.id} dijadwalkan pada ${ticket.scheduledAt?.toISOString()}.`,
+      url: '/dashboard/support',
+      tag: `ticket-scheduled-customer-${ticket.id}`,
+      data: { type: 'ticket-scheduled-customer', ticketId: ticket.id, userId: existingTicket.order.userId },
+    }
+  );
 
   return ticket;
 }
@@ -307,7 +318,7 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
   
     const ticket = await prismaClient.ticket.findFirst({
       where: { id: ticketId, technicianId: technician.id },
-      include: { category: true },
+      include: { category: true, order: true },
     });
   
     if (!ticket) {
@@ -332,6 +343,16 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
     }
 
     emitTicketUpdated({ ticketId: updated.id, type: 'status', status });
+    pushSubscriptionService.notifyAsync(
+      { userIds: [ticket.order.userId] },
+      {
+        title: 'Status tiket diperbarui',
+        body: `Status tiket #${updated.id} berubah menjadi ${status}.`,
+        url: '/dashboard/support',
+        tag: `ticket-status-${updated.id}-${status}`,
+        data: { type: 'ticket-status-updated', ticketId: updated.id, status, userId: ticket.order.userId },
+      }
+    );
     return updated;
 }
 
@@ -429,6 +450,16 @@ async function createSupportTicket(user: User, data: any) {
       url: `/admin/tickets?id=${ticket.id}`,
       tag: `support-ticket-${ticket.id}`,
       data: { type: 'support-ticket-created', ticketId: ticket.id, userId: user.id },
+    }
+  );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [user.id] },
+    {
+      title: 'Tiket dukungan diterima',
+      body: `Tiket #${ticket.id} telah dibuat dan akan ditinjau oleh admin.`,
+      url: '/dashboard/support',
+      tag: `support-ticket-customer-${ticket.id}`,
+      data: { type: 'support-ticket-received', ticketId: ticket.id, userId: user.id },
     }
   );
 
@@ -605,6 +636,21 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
       },
     }
   );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [ticket.order.userId] },
+    {
+      title: 'Survey selesai',
+      body: `Survey layanan Anda selesai. Tiket instalasi #${installationTicket.id} telah dibuat.`,
+      url: '/dashboard/support',
+      tag: `survey-completed-customer-${ticket.id}`,
+      data: {
+        type: 'survey-completed-customer',
+        surveyTicketId: ticket.id,
+        installationTicketId: installationTicket.id,
+        userId: ticket.order.userId,
+      },
+    }
+  );
   return installationTicket;
 }
 
@@ -613,7 +659,7 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
 
   const ticket = await prismaClient.ticket.findFirst({
     where: { id: ticketId, technicianId: technician.id },
-    include: { category: true },
+    include: { category: true, order: true },
   });
 
   if (!ticket) {
@@ -666,6 +712,16 @@ async function reportSurveyActual(ticketId: number, technician: User, data: any)
       url: `/admin/tickets?id=${ticket.id}`,
       tag: `actual-reported-${ticket.id}`,
       data: { type: 'actual-reported', ticketId: ticket.id, technicianId: technician.id },
+    }
+  );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [ticket.order.userId] },
+    {
+      title: 'Hasil pengerjaan dilaporkan',
+      body: `Teknisi telah melaporkan hasil pengerjaan tiket #${ticket.id}.`,
+      url: '/dashboard/support',
+      tag: `actual-reported-customer-${ticket.id}`,
+      data: { type: 'actual-reported-customer', ticketId: ticket.id, userId: ticket.order.userId },
     }
   );
 
@@ -867,6 +923,12 @@ async function updateSurvey(ticketId: number, data: any, actor?: User) {
 }
 
 async function markTicketPaid(orderId: number) {
+  const order = await prismaClient.order.findUnique({
+    where: { id: orderId },
+    select: { userId: true },
+  });
+  if (!order) throw { status: 404, message: 'Order not found' };
+
   const registrationTicket = await prismaClient.ticket.findFirst({
     where: { orderId, category: { name: 'registrasi' } },
     include: { category: true },
@@ -907,6 +969,16 @@ async function markTicketPaid(orderId: number) {
         url: `/admin/tickets?id=${created.id}`,
         tag: `order-paid-${orderId}`,
         data: { type: 'order-paid', orderId, ticketId: created.id },
+      }
+    );
+    pushSubscriptionService.notifyAsync(
+      { userIds: [order.userId] },
+      {
+        title: 'Pembayaran berhasil',
+        body: `Pembayaran Anda berhasil. Tiket survey #${created.id} telah dibuat.`,
+        url: '/dashboard/support',
+        tag: `order-paid-customer-${orderId}`,
+        data: { type: 'order-paid-customer', orderId, ticketId: created.id, userId: order.userId },
       }
     );
     return created;
@@ -961,6 +1033,16 @@ async function markTicketPaid(orderId: number) {
       url: `/admin/tickets?id=${surveyTicket.id}`,
       tag: `survey-ticket-${surveyTicket.id}`,
       data: { type: 'survey-ticket-created', orderId, ticketId: surveyTicket.id },
+    }
+  );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [order.userId] },
+    {
+      title: 'Pembayaran berhasil',
+      body: `Pembayaran Anda berhasil. Tiket survey #${surveyTicket.id} telah dibuat.`,
+      url: '/dashboard/support',
+      tag: `survey-ticket-customer-${surveyTicket.id}`,
+      data: { type: 'survey-ticket-created-customer', orderId, ticketId: surveyTicket.id, userId: order.userId },
     }
   );
   return surveyTicket;

@@ -2,6 +2,7 @@ import webPush from 'web-push';
 import { Role } from '@prisma/client';
 import { prismaClient } from '../application/prisma.js';
 import { env } from '../config/env.js';
+import notificationService from './notificationService.js';
 import {
   pushSubscriptionValidation,
   unsubscribePushValidation,
@@ -99,13 +100,24 @@ async function findTargetUserIds(options: NotifyOptions) {
 }
 
 async function notify(options: NotifyOptions, payload: PushPayload) {
-  if (!configureVapid()) {
-    return { sent: 0, failed: 0, skipped: true };
-  }
-
   const targetUserIds = await findTargetUserIds(options);
   if (targetUserIds.length === 0) {
     return { sent: 0, failed: 0, skipped: false };
+  }
+
+  await notificationService.createForTargets(
+    { userIds: targetUserIds },
+    {
+      title: payload.title,
+      message: payload.body,
+      type: String(payload.data?.type || payload.tag || 'general'),
+      url: payload.url || '/',
+      data: payload.data as any,
+    }
+  );
+
+  if (!configureVapid()) {
+    return { sent: 0, failed: 0, skipped: true };
   }
 
   const subscriptions = await prismaClient.pushSubscription.findMany({

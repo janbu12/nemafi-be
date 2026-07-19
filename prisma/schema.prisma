@@ -25,6 +25,7 @@ model User {
   memberTickets   TicketMember[]
   ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
   pushSubscriptions PushSubscription[]
+  notifications   Notification[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -70,6 +71,22 @@ model PushSubscription {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  title     String
+  message   String
+  type      String
+  url       String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
 
 enum Role {

@@ -61,6 +61,16 @@ async function markLatestInvoicePaid(userId: number) {
       data: { type: 'billing-paid', invoiceId: invoice.id, userId },
     }
   );
+  pushSubscriptionService.notifyAsync(
+    { userIds: [userId] },
+    {
+      title: 'Pembayaran berhasil',
+      body: `Pembayaran invoice #${invoice.id} telah diterima.`,
+      url: '/dashboard/billing',
+      tag: `invoice-paid-customer-${invoice.id}`,
+      data: { type: 'billing-paid-customer', invoiceId: invoice.id, userId },
+    }
+  );
 
   const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
   if (profile && !profile.isPppActive) {
@@ -94,6 +104,16 @@ async function markLatestInvoicePaid(userId: number) {
         url: `/admin/customers/${userId}`,
         tag: `service-reactivated-${userId}`,
         data: { type: 'service-reactivated', userId },
+      }
+    );
+    pushSubscriptionService.notifyAsync(
+      { userIds: [userId] },
+      {
+        title: 'Layanan aktif kembali',
+        body: 'Layanan internet Anda telah diaktifkan kembali setelah pembayaran.',
+        url: '/dashboard/billing',
+        tag: `service-reactivated-customer-${userId}`,
+        data: { type: 'service-reactivated-customer', userId },
       }
     );
   }
@@ -223,6 +243,18 @@ async function applyOverdueSuspension(graceDays = 3) {
       data: { type: 'billing-overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) },
     }
   );
+  overdueInvoices.forEach((invoice) => {
+    pushSubscriptionService.notifyAsync(
+      { userIds: [invoice.userId] },
+      {
+        title: 'Tagihan jatuh tempo',
+        body: `Invoice #${invoice.id} telah melewati masa tenggang.`,
+        url: '/dashboard/billing',
+        tag: `billing-overdue-customer-${invoice.id}`,
+        data: { type: 'billing-overdue-customer', invoiceId: invoice.id, userId: invoice.userId },
+      }
+    );
+  });
 
   for (const userId of userIds) {
     const profile = await prismaClient.profile.findUnique({ where: { user_id: userId } });
@@ -261,6 +293,16 @@ async function applyOverdueSuspension(graceDays = 3) {
           data: { type: 'service-suspended', userId },
         }
       );
+      pushSubscriptionService.notifyAsync(
+        { userIds: [userId] },
+        {
+          title: 'Layanan disuspend',
+          body: 'Layanan internet Anda sementara dinonaktifkan karena tagihan melewati masa tenggang.',
+          url: '/dashboard/billing',
+          tag: `service-suspended-customer-${userId}`,
+          data: { type: 'service-suspended-customer', userId },
+        }
+      );
     }
   }
 
@@ -296,7 +338,7 @@ async function generateMonthlyInvoices() {
     const periodEnd = new Date(periodStart.getTime() + settings.periodDays * 24 * 60 * 60 * 1000);
     const dueAt = new Date(periodStart.getTime() + settings.dueDays * 24 * 60 * 60 * 1000);
 
-    await prismaClient.billingInvoice.create({
+    const invoice = await prismaClient.billingInvoice.create({
       data: {
         userId: active.userId,
         amount: active.package?.price ?? 0,
@@ -306,6 +348,16 @@ async function generateMonthlyInvoices() {
         status: 'UNPAID',
       },
     });
+    pushSubscriptionService.notifyAsync(
+      { userIds: [active.userId] },
+      {
+        title: 'Tagihan baru',
+        body: `Tagihan ${active.package?.name || 'layanan internet'} telah tersedia.`,
+        url: '/dashboard/billing',
+        tag: `billing-new-${invoice.id}`,
+        data: { type: 'billing-new', invoiceId: invoice.id, userId: active.userId },
+      }
+    );
     created += 1;
   }
 
@@ -516,6 +568,16 @@ async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVER
             data: { type: 'service-suspended', userId, invoiceId: id },
           }
         );
+        pushSubscriptionService.notifyAsync(
+          { userIds: [userId] },
+          {
+            title: 'Layanan disuspend',
+            body: 'Layanan internet Anda sementara dinonaktifkan karena status tagihan overdue.',
+            url: '/dashboard/billing',
+            tag: `service-suspended-customer-${userId}-${id}`,
+            data: { type: 'service-suspended-customer', userId, invoiceId: id },
+          }
+        );
       }
     } else if (status === 'PAID') {
       await prismaClient.profile.update({
@@ -547,6 +609,16 @@ async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVER
             data: { type: 'service-reactivated', userId, invoiceId: id },
           }
         );
+        pushSubscriptionService.notifyAsync(
+          { userIds: [userId] },
+          {
+            title: 'Layanan aktif kembali',
+            body: 'Layanan internet Anda telah diaktifkan kembali.',
+            url: '/dashboard/billing',
+            tag: `service-reactivated-customer-${userId}-${id}`,
+            data: { type: 'service-reactivated-customer', userId, invoiceId: id },
+          }
+        );
       }
     } else if (status === 'UNPAID') {
       await prismaClient.profile.update({
@@ -573,6 +645,16 @@ async function updateInvoiceStatus(id: number, status: 'PAID' | 'UNPAID' | 'OVER
   }
 
   emitBillingUpdated({ type: 'status_updated', invoiceIds: [id] });
+  pushSubscriptionService.notifyAsync(
+    { userIds: [userId] },
+    {
+      title: 'Status tagihan diperbarui',
+      body: `Status invoice #${id} berubah menjadi ${status}.`,
+      url: '/dashboard/billing',
+      tag: `invoice-status-customer-${id}-${status}`,
+      data: { type: 'invoice-status-updated', invoiceId: id, status, userId },
+    }
+  );
 
   return updatedInvoice;
 }

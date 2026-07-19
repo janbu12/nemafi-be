@@ -6,9 +6,9 @@ import { success } from '../utils/responseHandler.js';
 
 function assertInternalRole(req: AuthRequest) {
   const role = req.user?.role;
-  const allowedRoles: Role[] = [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN];
+  const allowedRoles: Role[] = [Role.CUSTOMER, Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN];
   if (!role || !allowedRoles.includes(role)) {
-    throw { status: 403, message: 'Push notification is only available for admin and technician' };
+    throw { status: 403, message: 'Push notification is not available for this role' };
   }
 }
 
