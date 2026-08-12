@@ -34,20 +34,31 @@ async function withRouterApi<T>(routerId: number, handler: (api: any) => Promise
   //
   // Client lama tersebut bergantung pada node-routeros dan dapat crash pada
   // RouterOS 7.18+ saat router mengembalikan reply !empty.
-  const client = new RouterOSClient({
-    host: router.host,
-    username: router.user,
-    password: router.password,
-    port: router.portApi || router.port || 8728,
-    tls: false,
-    timeout: 10000,
-  });
-
-  const api = await client.connect();
   try {
-    return await handler(api);
-  } finally {
-    await client.close();
+    const client = new RouterOSClient({
+      host: router.host,
+      username: router.user,
+      password: router.password,
+      port: router.portApi || router.port || 8728,
+      tls: false,
+      timeout: 5000,
+    });
+
+    const api = await client.connect();
+    try {
+      return await handler(api);
+    } finally {
+      await client.close();
+    }
+  } catch (err: any) {
+    const errorMsg = err?.message || String(err);
+    if (errorMsg.includes('ECONNREFUSED')) {
+      throw { status: 503, message: `Tidak dapat terhubung ke MikroTik ${router.name} (${router.host}:8728). Port API MikroTik dinonaktifkan atau ditolak.` };
+    }
+    if (errorMsg.includes('ETIMEDOUT') || errorMsg.includes('timeout')) {
+      throw { status: 504, message: `Koneksi ke MikroTik ${router.name} (${router.host}) timeout.` };
+    }
+    throw { status: 500, message: `MikroTik API Error: ${errorMsg}` };
   }
 }
 
