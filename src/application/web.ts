@@ -44,13 +44,35 @@ web.use((req, res, next) => {
   next();
 });
 
-web.use(helmet());
-web.use(cors({
-  origin: process.env.FRONTEND_URL?.split(','),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+const rawOrigins = process.env.FRONTEND_URL || 'http://localhost:3000,https://nemafi.pranala.my.id';
+const allowedOrigins = rawOrigins
+  .split(',')
+  .map((url) => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+web.use(helmet({ crossOriginResourcePolicy: false }));
+web.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.trim().replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        allowedOrigins.includes('*') ||
+        normalizedOrigin.endsWith('.pranala.my.id') ||
+        normalizedOrigin === 'https://pranala.my.id' ||
+        normalizedOrigin.includes('localhost') ||
+        normalizedOrigin.includes('127.0.0.1')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+  })
+);
 web.use(express.json({ limit: '10mb' }));
 web.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

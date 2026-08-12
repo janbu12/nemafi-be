@@ -5,11 +5,10 @@ import mikrotikService from "./mikrotikService.js";
 async function create(data: any) {
     const validatedData = createRouterValidation.parse(data);
     const router = await prismaClient.router.create({ data: validatedData });
-    try {
-        await mikrotikService.syncAllPackagesToRouter(router.id);
-    } catch (err: any) {
-        console.warn(`[Router Create Warning] Failed to sync packages to new router '${router.name}': ${err.message}`);
-    }
+    // Run package sync asynchronously in the background so HTTP response doesn't hang or timeout
+    mikrotikService.syncAllPackagesToRouter(router.id).catch((err: any) => {
+        console.warn(`[Router Create Background Sync] Failed to sync packages to router '${router.name}': ${err.message}`);
+    });
     return router;
 }
 
