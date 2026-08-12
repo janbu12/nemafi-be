@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import { Role } from '@prisma/client';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
 import billingService from '../services/billingService.js';
 import { success } from '../utils/responseHandler.js';
@@ -33,6 +34,11 @@ async function getInvoiceDetail(req: AuthRequest, res: Response, next: NextFunct
     const id = Number(req.params.id);
     const invoice = await billingService.getInvoiceById(id);
     if (!invoice) return success(res, null, 'Invoice not found', 404);
+
+    if (req.user?.role === Role.CUSTOMER && invoice.userId !== req.user.id) {
+      return success(res, null, 'Unauthorized access to this invoice', 403);
+    }
+
     return success(res, invoice, 'Billing invoice detail');
   } catch (e) {
     next(e);
