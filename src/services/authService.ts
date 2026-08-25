@@ -3,6 +3,7 @@ import utils from "../utils/utils.js";
 import bcrypt from 'bcryptjs';
 import { loginValidation, registerValidation } from "../validation/authValidation.js";
 import { toUserDto } from "../utils/userDto.js";
+import coveredAreaService from "./coveredAreaService.js";
 
 // Auth
 async function registerUser(input: {
@@ -24,7 +25,22 @@ async function registerUser(input: {
 }) {
     const data = registerValidation.parse(input);
 
-    // 1. Validasi email dan paket
+    // 1. Validasi area coverage
+    const coverageResult = await coveredAreaService.checkAvailabilityNoHistory({
+        fullAddress: data.full_address,
+        province: data.province,
+        city: data.city,
+        district: data.district,
+        village: data.subdistrict,
+        latitude: data.latitude,
+        longitude: data.longitude,
+    });
+
+    if (!coverageResult.isAvailable) {
+        throw { status: 400, message: 'Pendaftaran gagal: Area Anda belum tercover layanan kami.' };
+    }
+
+    // 2. Validasi email dan paket
     const existingUser = await prismaClient.user.findUnique({ where: { email: data.email } });
     if (existingUser) throw { status: 400, message: 'Email already registered' };
 
@@ -148,8 +164,78 @@ async function logoutUser(token: string) {
     return { message: "Logout successful" };
 }
 
+import crypto from 'crypto';
+import emailService from './emailService.js';
+
+async function forgotPassword(email: string) {
+    const user = await prismaClient.user.findUnique({ where: { email } });
+    if (!user) {
+        // We do not throw an error to prevent email enumeration attacks
+        return { message: "If your email is registered, you will receive a reset link." };
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Clear existing tokens for this user
+    await prismaClient.passwordResetToken.deleteMany({
+        where: { userId: user.id }
+    });
+
+    await prismaClient.passwordResetToken.create({
+        data: {
+            token: resetToken,
+            userId: user.id,
+            expiresAt,
+        }
+    });
+
+    try {
+        await emailService.sendPasswordResetEmail(user.email, resetToken, user.fullname);
+    } catch (error) {
+        console.error("Failed to send reset email:", error);
+        throw { status: 500, message: "Failed to send reset email. Please try again later." };
+    }
+
+    return { message: "If your email is registered, you will receive a reset link." };
+}
+
+async function resetPassword(input: any) {
+    const { token, newPassword } = input;
+    if (!token || !newPassword) {
+        throw { status: 400, message: "Token and new password are required" };
+    }
+
+    const resetTokenRecord = await prismaClient.passwordResetToken.findUnique({
+        where: { token },
+        include: { user: true }
+    });
+
+    if (!resetTokenRecord) {
+        throw { status: 400, message: "Invalid or expired reset token" };
+    }
+
+    if (resetTokenRecord.expiresAt < new Date()) {
+        await prismaClient.passwordResetToken.delete({ where: { id: resetTokenRecord.id } });
+        throw { status: 400, message: "Reset token has expired" };
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prismaClient.user.update({
+        where: { id: resetTokenRecord.userId },
+        data: { password: hashedPassword }
+    });
+
+    await prismaClient.passwordResetToken.delete({ where: { id: resetTokenRecord.id } });
+
+    return { message: "Password has been successfully reset" };
+}
+
 export default {
     registerUser,
     loginUser,
     logoutUser,
+    forgotPassword,
+    resetPassword
 }

@@ -433,6 +433,17 @@ const dialogConfigs = {
     header: "P17 - Belum Memiliki Order Aktif",
     desc: "Anda belum memiliki order aktif.",
   },
+  p18: { type: "success", code: "P18", header: "P18 - Pelanggan Berhasil Didaftarkan", desc: "Pelanggan baru telah berhasil didaftarkan ke sistem." },
+  p19: { type: "success", code: "P19", header: "P19 - Jadwal Teknisi Berhasil Diperbarui", desc: "Jadwal dan detail tugas teknisi berhasil diperbarui." },
+  p20: { type: "success", code: "P20", header: "P20 - Sinkronisasi Paket Berhasil", desc: "Paket berhasil disinkronkan ke router MikroTik." },
+  p21: { type: "error", code: "P21", header: "P21 - Gagal Memuat Detail Transaksi", desc: "Terjadi kesalahan saat memuat detail order atau transaksi." },
+  p22: { type: "error", code: "P22", header: "P22 - Gagal Menyimpan Hasil Survey", desc: "Terjadi kesalahan saat menyimpan hasil survey jaringan." },
+  p23: { type: "success", code: "P23", header: "P23 - Kategori Tiket Berhasil Disimpan", desc: "Kategori tiket berhasil ditambahkan atau diperbarui." },
+  p24: { type: "success", code: "P24", header: "P24 - Laporan Aktual Berhasil Disimpan", desc: "Laporan pelaksanaan pekerjaan teknisi berhasil disimpan." },
+  p25: { type: "error", code: "P25", header: "P25 - Gagal Menyimpan Laporan Aktual", desc: "Terjadi kesalahan sistem saat menyimpan laporan." },
+  p26: { type: "success", code: "P26", header: "P26 - PPPoE User Berhasil Ditambahkan", desc: "Kredensial PPPoE berhasil disuntikkan ke dalam router." },
+  p27: { type: "success", code: "P27", header: "P27 - Koneksi Router Berhasil", desc: "Koneksi API router berhasil dites dengan sukses." },
+  p28: { type: "error", code: "P28", header: "P28 - Gagal Mengetes Koneksi Router", desc: "Router tidak dapat dihubungi, periksa IP atau kredensial." },
 };
 
 function dialogSlug(config) {
@@ -1135,36 +1146,67 @@ function pageContent(kind) {
       return svg;
     }),
     technicianTickets: () => dashboardShell("Tiket Teknisi", techMenu, 0, (x, y) =>
-      card(x, y + 28, 330, 160, "Tiket Ditugaskan", "Pekerjaan aktif teknisi") +
-      card(x + 365, y + 28, 330, 160, "Sedang Dikerjakan", "Progress lapangan") +
-      card(x + 730, y + 28, 330, 160, "Perlu Laporan", "Upload hasil pekerjaan") +
-      card(x, y + 225, 1060, 350, "Daftar Tiket", "Tiket survey, instalasi, dan gangguan") +
-      table(x + 24, y + 295, 1012, ["Tiket", "Pelanggan", "Status", "Jadwal"], [["TK-201", "A. Rahman", "Scheduled", "08:00"], ["TK-202", "S. Putri", "In Progress", "10:00"], ["TK-203", "D. Nugraha", "Open", "13:00"]])
+      card(x, y + 28, 1060, 560, "Daftar Tiket", "Tiket tugas lapangan") +
+      rect(x + 24, y + 105, 1012, 45, c.card2, c.border, 1, 6) +
+      rect(x + 24, y + 105, 120, 45, c.active, c.border, 1, 6) +
+      text(x + 84, y + 132, "Kapten", 14, c.primary, 700, "middle") +
+      text(x + 204, y + 132, "Anggota", 14, c.muted, 600, "middle") +
+      table(x + 24, y + 175, 1012, ["Tiket", "Pelanggan", "Peran", "Jadwal", "Status"], [["TKT-201", "A. Rahman", "Kapten", "Hari ini, 08:00", "In Progress"], ["TKT-202", "S. Putri", "Kapten", "Hari ini, 10:00", "Scheduled"]])
     ),
     technicianSchedule: () => dashboardShell("Jadwal & Tugas", techMenu, 1, (x, y) =>
-      card(x, y + 28, 590, 520, "Kalender Jadwal Teknisi", "Agenda kunjungan lapangan") +
-      Array.from({ length: 21 }).map((_, i) => rect(x + 30 + (i % 7) * 74, y + 115 + Math.floor(i / 7) * 76, 62, 52, i === 8 ? c.active : c.card2, c.border, 1, 8) + text(x + 61 + (i % 7) * 74, y + 148 + Math.floor(i / 7) * 76, String(i + 1), 16, c.text, 700, "middle")).join("") +
-      card(x + 625, y + 28, 435, 520, "Detail Jadwal", "Alamat, pelanggan, dan tim teknisi") +
-      table(x + 650, y + 118, 385, ["Jam", "Tiket", "Status"], [["08:00", "TK-201", "Survey"], ["10:00", "TK-202", "Instalasi"], ["13:00", "TK-203", "Gangguan"]])
+      card(x, y + 28, 640, 560, "Detail Tiket (TKT-201)", "Pemasangan Baru") +
+      rect(x + 24, y + 100, 592, 120, c.card2, c.border, 1, 8) +
+      text(x + 40, y + 130, "Kredensial PPPoE", 16, c.primary, 700) +
+      text(x + 40, y + 160, "Username: ppp-201", 14, c.text, 500) +
+      text(x + 40, y + 185, "Password: ppp-201-pass", 14, c.text, 500) +
+      rect(x + 24, y + 240, 592, 200, c.card2, c.border, 1, 8) +
+      text(x + 320, y + 345, "[ Map View ]", 20, c.muted, 600, "middle") +
+      card(x + 665, y + 28, 395, 560, "Tim & Form Laporan", "Dokumentasi pekerjaan")
     ),
     technicianHistory: () => dashboardShell("Riwayat Teknisi", techMenu, 2, (x, y) =>
-      card(x, y + 28, 320, 140, "Selesai", "Pekerjaan selesai") +
-      card(x + 350, y + 28, 320, 140, "Survey", "Riwayat survey") +
-      card(x + 700, y + 28, 360, 140, "Instalasi", "Riwayat instalasi") +
-      card(x, y + 205, 1060, 390, "Riwayat Pengerjaan", "Laporan hasil pekerjaan teknisi") +
-      table(x + 24, y + 275, 1012, ["Tiket", "Pelanggan", "Pekerjaan", "Selesai"], [["TK-190", "R. Aditya", "Instalasi", "10 Jan"], ["TK-191", "M. Sari", "Gangguan", "11 Jan"], ["TK-192", "F. Hidayat", "Survey", "12 Jan"]])
+      card(x, y + 28, 1060, 560, "Riwayat Pengerjaan", "Tiket yang sudah diselesaikan") +
+      table(x + 24, y + 100, 1012, ["Tiket", "Pelanggan", "Kategori", "Selesai"], [["TKT-190", "R. Aditya", "Instalasi", "10 Jan 2026"], ["TKT-191", "M. Sari", "Gangguan", "11 Jan 2026"]])
     ),
     router: () => dashboardShell("Manajemen Router", techMenu, 3, (x, y) =>
-      card(x, y + 28, 320, 140, "Router Aktif", "Koneksi API/SSH") +
-      card(x + 350, y + 28, 320, 140, "Sinkronisasi", "Paket dan PPPoE") +
-      rect(x + 805, y + 47, 210, 44, c.white, c.white, 1, 9) +
-      text(x + 910, y + 76, "Tambah Router", 16, c.appBg, 700, "middle") +
-      card(x, y + 205, 650, 390, "Daftar Router", "Host, user, port API, dan status") +
-      table(x + 24, y + 275, 602, ["Nama", "Host", "API", "Status"], [["Core-01", "10.10.1.1", "8728", "Online"], ["POP-02", "10.10.2.1", "8728", "Online"]]) +
-      card(x + 680, y + 205, 380, 390, "Terminal Router", "Eksekusi command RouterOS") +
-      rect(x + 708, y + 290, 324, 190, c.card2, c.border, 1, 8) +
-      text(x + 730, y + 330, "/ppp/secret/print", 18, c.text, 600) +
-      text(x + 730, y + 368, "!re name=pelanggan01", 16, c.faint, 500)
+      card(x, y + 28, 1060, 560, "Manajemen Router", "Koneksi API Mikrotik") +
+      table(x + 24, y + 100, 1012, ["Nama", "IP Address", "API Port", "Status", "Aksi"], [["Router Utama", "192.168.1.1", "8728", "Online", "✏️ 🗑️"], ["Router Cabang", "192.168.2.1", "8728", "Offline", "✏️ 🗑️"]])
+    ),
+    adminDashboard: () => dashboardShell("Ringkasan Admin", adminMenu, 0, (x, y) =>
+      card(x, y + 28, 250, 120, "Total Pelanggan", "45 Aktif") +
+      card(x + 270, y + 28, 250, 120, "Pendapatan", "Rp 12.5M") +
+      card(x + 540, y + 28, 250, 120, "Tiket Open", "3 Tiket") +
+      card(x + 810, y + 28, 250, 120, "Router", "2 Online") +
+      card(x, y + 168, 1060, 420, "Grafik Transaksi", "Perkembangan pendapatan bulanan")
+    ),
+    adminTransactions: () => dashboardShell("Transaksi", adminMenu, 3, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Transaksi", "Pembayaran pelanggan") +
+      table(x + 24, y + 100, 1012, ["ID Order", "Pelanggan", "Jumlah", "Gateway", "Status"], [["ORD-01", "Budi", "Rp 150.000", "Midtrans", "PAID"], ["ORD-02", "Andi", "Rp 250.000", "Xendit", "PENDING"]])
+    ),
+    adminCustomers: () => dashboardShell("Kelola Pelanggan", adminMenu, 4, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Pelanggan", "Pelanggan aktif dan non-aktif") +
+      table(x + 24, y + 100, 1012, ["Nama", "Email", "No. HP", "Paket", "Status"], [["Budi Santoso", "budi@mail.com", "0812...", "Paket 10Mbps", "Aktif"], ["Andi", "andi@mail.com", "0813...", "Paket 20Mbps", "Suspend"]])
+    ),
+    adminTechnicians: () => dashboardShell("Kelola Teknisi", adminMenu, 5, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Teknisi", "Tim lapangan") +
+      table(x + 24, y + 100, 1012, ["Nama", "Email", "Pekerjaan Aktif", "Status"], [["Joko", "joko@mail.com", "2 Tiket", "Aktif"], ["Agus", "agus@mail.com", "0 Tiket", "Aktif"]])
+    ),
+    customerDashboard: () => dashboardShell("Dashboard Pelanggan", customerMenu, 0, (x, y) =>
+      card(x, y + 28, 330, 160, "Status Layanan", "Aktif") +
+      card(x + 365, y + 28, 330, 160, "Tagihan Bulan Ini", "Lunas") +
+      card(x + 730, y + 28, 330, 160, "Tiket Aktif", "0 Tiket") +
+      card(x, y + 210, 1060, 370, "Info Paket", "Paket Home 10 Mbps")
+    ),
+    packageCategories: () => dashboardShell("Kategori Paket", adminMenu, 1, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Kategori Paket", "Grup layanan (misal: Broadband, Dedicated)") +
+      table(x + 24, y + 100, 1012, ["ID", "Nama Kategori", "Jumlah Paket", "Dibuat Pada"], [["CAT-01", "Home Broadband", "3", "12 Mei"], ["CAT-02", "Corporate Dedicated", "2", "12 Mei"]])
+    ),
+    ticketCategories: () => dashboardShell("Kategori Tiket", adminMenu, 6, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Kategori Tiket", "Grup insiden (misal: Instalasi, Gangguan)") +
+      table(x + 24, y + 100, 1012, ["ID", "Nama Kategori", "Prioritas", "Deskripsi"], [["TC-01", "Instalasi Baru", "Normal", "Pemasangan perangkat awal"], ["TC-02", "Gangguan Jaringan", "High", "Koneksi terputus/lambat"]])
+    ),
+    inventoryCategories: () => dashboardShell("Kategori Inventaris", adminMenu, 2, (x, y) =>
+      card(x, y + 28, 1060, 560, "Daftar Kategori Barang", "Grup stok (misal: Router, Kabel, Tiang)") +
+      table(x + 24, y + 100, 1012, ["ID", "Nama Kategori", "Total Barang", "Tipe"], [["IC-01", "Router Fiber", "150", "Hardware"], ["IC-02", "Kabel Dropcore", "5000", "Consumable"]])
     ),
   };
 
@@ -1183,18 +1225,26 @@ const specs = [
 const pages = [
   ["TA01", "Antarmuka Halaman Login", "login", "Tombol Masuk mengirim kredensial pengguna. Jika valid, sistem mengarahkan pengguna sesuai role menuju dashboard pelanggan, admin, atau teknisi."],
   ["TA02", "Antarmuka Halaman Register", "register", "Tombol Daftar menyimpan data pelanggan, alamat pemasangan, paket pilihan, dan membuat order pendaftaran layanan."],
-  ["TA03", "Antarmuka Halaman Profil", "profile", "Halaman Profil digunakan pelanggan untuk melihat dan memperbarui data diri, alamat pemasangan, serta status layanan yang aktif."],
-  ["TA04", "Antarmuka Halaman Dukungan", "support", "Halaman Dukungan digunakan pelanggan untuk membuat tiket gangguan dan melihat riwayat tiket yang pernah diajukan."],
-  ["TA05", "Antarmuka Halaman Tagihan", "billing", "Halaman Tagihan menampilkan invoice berjalan, status pembayaran, riwayat pembayaran, dan paket berlangganan pelanggan."],
-  ["TA06", "Antarmuka Halaman Kelola Paket", "packages", "Admin menggunakan halaman ini untuk menambah, mengubah, menghapus, dan mengelompokkan paket layanan internet."],
-  ["TA07", "Antarmuka Halaman Kelola Tiket", "ticketsAdmin", "Admin menggunakan halaman ini untuk membuat tiket, menjadwalkan kunjungan, assign teknisi, dan memantau riwayat tiket."],
-  ["TA08", "Antarmuka Halaman Kelola Inventaris", "inventory", "Admin menggunakan halaman ini untuk mengelola kategori dan stok perangkat yang dipakai pada proses survey dan instalasi."],
-  ["TA09", "Antarmuka Halaman Area Layanan", "areas", "Admin menggunakan halaman ini untuk memetakan cakupan area layanan berdasarkan koordinat dan radius."],
-  ["TA10", "Antarmuka Halaman History Check Area", "areaHistory", "Admin menggunakan halaman ini untuk melihat riwayat pengecekan jangkauan lokasi oleh calon pelanggan."],
-  ["TA11", "Antarmuka Halaman Tiket Teknisi", "technicianTickets", "Teknisi menggunakan halaman ini untuk melihat dan mengelola status tiket pekerjaan yang ditugaskan."],
-  ["TA12", "Antarmuka Halaman Jadwal & Tugas", "technicianSchedule", "Teknisi menggunakan halaman ini untuk memantau jadwal tugas harian dan agenda kunjungan lapangan."],
-  ["TA13", "Antarmuka Halaman Riwayat Teknisi", "technicianHistory", "Teknisi menggunakan halaman ini untuk melihat riwayat pekerjaan yang telah diselesaikan."],
-  ["TA14", "Antarmuka Halaman Kelola Router", "router", "Teknisi menggunakan halaman ini untuk memantau koneksi router MikroTik fisik dan mengakses terminal perintah."],
+  ["TA03", "Antarmuka Halaman Dashboard Pelanggan", "customerDashboard", "Pelanggan menggunakan halaman ini untuk memantau secara cepat status langganan, jadwal pembayaran, dan tiket yang masih aktif."],
+  ["TA04", "Antarmuka Halaman Tagihan", "billing", "Halaman Tagihan menampilkan invoice berjalan, status pembayaran, riwayat pembayaran, dan paket berlangganan pelanggan."],
+  ["TA05", "Antarmuka Halaman Dukungan", "support", "Halaman Dukungan digunakan pelanggan untuk membuat tiket gangguan dan melihat riwayat tiket yang pernah diajukan."],
+  ["TA06", "Antarmuka Halaman Profil", "profile", "Halaman Profil digunakan pelanggan, admin, dan teknisi untuk memperbarui kata sandi serta data diri pribadi."],
+  ["TA07", "Antarmuka Halaman Tiket Teknisi", "technicianTickets", "Teknisi menggunakan halaman ini sebagai beranda utama untuk melihat tiket pekerjaan yang ditugaskan (Kapten/Anggota)."],
+  ["TA08", "Antarmuka Halaman Jadwal & Tugas", "technicianSchedule", "Teknisi menggunakan halaman ini untuk memantau detail tugas, kredensial PPPoE pelanggan, dan mengisi laporan."],
+  ["TA09", "Antarmuka Halaman Riwayat Teknisi", "technicianHistory", "Teknisi menggunakan halaman ini untuk melihat riwayat pekerjaan yang telah diselesaikan."],
+  ["TA10", "Antarmuka Halaman Kelola Router Teknisi", "router", "Teknisi menggunakan halaman ini untuk memantau koneksi router MikroTik fisik dan mengakses terminal perintah."],
+  ["TA11", "Antarmuka Halaman Dashboard Admin", "adminDashboard", "Admin menggunakan halaman ini untuk melihat statistik umum aplikasi, pendapatan, pelanggan aktif, dan status router."],
+  ["TA12", "Antarmuka Halaman Kelola Paket", "packages", "Admin menggunakan halaman ini untuk menambah, mengubah, dan menghapus paket layanan internet utama."],
+  ["TA13", "Antarmuka Halaman Kategori Paket", "packageCategories", "Admin menggunakan halaman ini untuk mengelompokkan jenis layanan internet."],
+  ["TA14", "Antarmuka Halaman Kelola Pelanggan", "adminCustomers", "Admin menggunakan halaman ini untuk memonitor pelanggan aktif, melakukan pemutusan/suspend, dan melihat detail profil pelanggan."],
+  ["TA15", "Antarmuka Halaman Kelola Teknisi", "adminTechnicians", "Admin menggunakan halaman ini untuk menambah akun teknisi baru dan memantau tugas aktif setiap teknisi."],
+  ["TA16", "Antarmuka Halaman Kelola Tiket Admin", "ticketsAdmin", "Admin menggunakan halaman ini untuk membuat tiket, menjadwalkan kunjungan, assign teknisi, dan memantau riwayat tiket."],
+  ["TA17", "Antarmuka Halaman Kategori Tiket", "ticketCategories", "Admin menggunakan halaman ini untuk mengelompokkan jenis gangguan atau layanan."],
+  ["TA18", "Antarmuka Halaman Kelola Inventaris", "inventory", "Admin menggunakan halaman ini untuk mengelola stok perangkat yang dipakai pada proses survey dan instalasi."],
+  ["TA19", "Antarmuka Halaman Kategori Inventaris", "inventoryCategories", "Admin menggunakan halaman ini untuk mengelompokkan jenis barang logistik/perangkat."],
+  ["TA20", "Antarmuka Halaman Transaksi", "adminTransactions", "Admin menggunakan halaman ini untuk melihat dan merekonsiliasi pembayaran dari pelanggan melalui Xendit/Midtrans."],
+  ["TA21", "Antarmuka Halaman Kelola Area Layanan", "areas", "Admin menggunakan halaman ini untuk memetakan cakupan area layanan berdasarkan koordinat dan radius."],
+  ["TA22", "Antarmuka Halaman Riwayat Cek Area", "areaHistory", "Admin menggunakan halaman ini untuk melihat riwayat pengecekan jangkauan lokasi oleh calon pelanggan."]
 ];
 
 function drawNotes(note) {
@@ -1245,95 +1295,136 @@ function convertSvg(svgPath, pngPath) {
   }
 }
 
-function generateSemanticNetworkSvg() {
-  const svgW = 800;
-  const svgH = 850;
-  
+function createRadialNetworkSVG(title, centerX, centerY, centerRadius, centerNode, peripherals) {
+  const svgW = 1200;
+  const svgH = 1200;
   let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
-  <rect width="${svgW}" height="${svgH}" fill="${c.paper}"/>
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 2 L 8 5 L 0 8 Z" fill="#111111"/>
-    </marker>
-  </defs>
-  
-  <text x="400" y="820" font-family="Inter, Poppins, Arial, sans-serif" font-size="20" font-weight="700" fill="#111111" text-anchor="middle">Gambar 3.183 Jaringan Semantik Pelanggan</text>
-  
-  <!-- Connections (Arrows) -->
-  <!-- Top-Left TA02 to Center TA01 -->
-  <path d="M 271 184 L 362 254" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Top-Right TA02 to Center TA01 -->
-  <path d="M 529 184 L 438 254" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Center TA01 to Left-Middle TA03 -->
-  <path d="M 340 400 L 208 400" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Center TA01 to Right-Middle TA05 -->
-  <path d="M 460 400 L 592 400" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Left-Middle TA03 to Left-Lower TA04 -->
-  <path d="M 160 440 L 160 532" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Left-Lower TA04 to Left-Bottom TA01 -->
-  <path d="M 160 620 L 160 692" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  
-  <!-- Self Loops -->
-  <!-- Top-Left TA02 -->
-  <path d="M 230 115 C 210 50, 290 50, 270 115" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="250" y="45" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P02</text>
-  
-  <!-- Top-Right TA02 -->
-  <path d="M 530 115 C 510 50, 590 50, 570 115" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="550" y="45" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P03</text>
-  
-  <!-- Center TA01 -->
-  <path d="M 380 348 C 360 270, 440 270, 420 348" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="400" y="260" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P01</text>
-  
-  <!-- Left-Middle TA03 -->
-  <path d="M 140 365 C 120 300, 200 300, 180 365" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="160" y="290" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P11, P12, P13</text>
-  
-  <!-- Left-Lower TA04 -->
-  <path d="M 140 545 C 120 480, 200 480, 180 545" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="160" y="470" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P17, P16</text>
-  
-  <!-- Right-Middle TA05 -->
-  <path d="M 620 365 C 600 300, 680 300, 660 365" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="640" y="290" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">P09, P14, P15</text>
-  
-  <!-- Nodes (Circles with labels) -->
-  <!-- Top-Left Register TA02 -->
-  <circle cx="250" cy="150" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="250" y="157" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA02</text>
-  
-  <!-- Top-Right Register TA02 -->
-  <circle cx="550" cy="150" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="550" y="157" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA02</text>
-  
-  <!-- Center Login TA01 -->
-  <circle cx="400" cy="400" r="60" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="400" y="407" font-family="Inter, Poppins, Arial, sans-serif" font-size="20" font-weight="700" fill="#111111" text-anchor="middle">TA01</text>
-  
-  <!-- Left-Middle Profile TA03 -->
-  <circle cx="160" cy="400" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="160" y="407" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA03</text>
-  
-  <!-- Left-Lower Support TA04 -->
-  <circle cx="160" cy="580" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="160" y="587" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA04</text>
-  
-  <!-- Left-Bottom Redirect TA01 -->
-  <circle cx="160" cy="740" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="160" y="747" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA01</text>
-  
-  <!-- Right-Middle Billing TA05 -->
-  <circle cx="640" cy="400" r="40" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
-  <text x="640" y="407" font-family="Inter, Poppins, Arial, sans-serif" font-size="16" font-weight="700" fill="#111111" text-anchor="middle">TA05</text>
-</svg>`;
+  <rect width="${svgW}" height="${svgH}" fill="${c.paper || '#ffffff'}"/>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 2 L 8 5 L 0 8 Z" fill="#111111"/></marker></defs>
+  <text x="${svgW/2}" y="${svgH - 40}" font-family="Inter, Poppins, Arial, sans-serif" font-size="22" font-weight="700" fill="#111111" text-anchor="middle">${title}</text>
+`;
+
+  const radius = 320; 
+  const nodeRadius = 45;
+
+  svg += `<circle cx="${centerX}" cy="${centerY}" r="${centerRadius}" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>`;
+  svg += `<text x="${centerX}" y="${centerY + 7}" font-family="Inter, Poppins, Arial, sans-serif" font-size="20" font-weight="700" fill="#111111" text-anchor="middle">${centerNode.id}</text>`;
+
+  const angleStep = (2 * Math.PI) / peripherals.length;
+  for (let i = 0; i < peripherals.length; i++) {
+    const p = peripherals[i];
+    const angle = i * angleStep - Math.PI / 2; 
+    const nx = centerX + radius * Math.cos(angle);
+    const ny = centerY + radius * Math.sin(angle);
+    
+    const dx = nx - centerX;
+    const dy = ny - centerY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const ux = dx / dist; 
+    const uy = dy / dist;
+    const px = -uy; 
+    const py = ux;
+    
+    const offset = 8;
+    const startX1 = centerX + ux * centerRadius + px * offset;
+    const startY1 = centerY + uy * centerRadius + py * offset;
+    const endX1 = nx - ux * nodeRadius + px * offset;
+    const endY1 = ny - uy * nodeRadius + py * offset;
+    
+    const startX2 = nx - ux * nodeRadius - px * offset;
+    const startY2 = ny - uy * nodeRadius - py * offset;
+    const endX2 = centerX + ux * centerRadius - px * offset;
+    const endY2 = centerY + uy * centerRadius - py * offset;
+
+    svg += `<path d="M ${startX1} ${startY1} L ${endX1} ${endY1}" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>`;
+    svg += `<path d="M ${startX2} ${startY2} L ${endX2} ${endY2}" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>`;
+
+    svg += `<circle cx="${nx}" cy="${ny}" r="${nodeRadius}" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>`;
+    svg += `<text x="${nx}" y="${ny + 6}" font-family="Inter, Poppins, Arial, sans-serif" font-size="18" font-weight="700" fill="#111111" text-anchor="middle">${p.id}</text>`;
+    
+    if (p.msgs && p.msgs.length > 0) {
+      const sx = nx + ux * nodeRadius + px * 12;
+      const sy = ny + uy * nodeRadius + py * 12;
+      const ex = nx + ux * nodeRadius - px * 12;
+      const ey = ny + uy * nodeRadius - py * 12;
+      
+      const c1x = nx + ux * (nodeRadius + 60) + px * 50;
+      const c1y = ny + uy * (nodeRadius + 60) + py * 50;
+      const c2x = nx + ux * (nodeRadius + 60) - px * 50;
+      const c2y = ny + uy * (nodeRadius + 60) - py * 50;
+      
+      svg += `<path d="M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${ey}" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>`;
+      
+      const tx = nx + ux * (nodeRadius + 85);
+      const ty = ny + uy * (nodeRadius + 85);
+      svg += `<text x="${tx}" y="${ty + 5}" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">${p.msgs.join(", ")}</text>`;
+    }
+  }
+
+  if (centerNode.msgs && centerNode.msgs.length > 0) {
+    const nx = centerX, ny = centerY;
+    const sx = nx + 20, sy = ny - centerRadius;
+    const ex = nx - 20, ey = ny - centerRadius;
+    const c1x = nx + 70, c1y = ny - centerRadius - 70;
+    const c2x = nx - 70, c2y = ny - centerRadius - 70;
+    
+    svg += `<path d="M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${ey}" stroke="#111111" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>`;
+    svg += `<text x="${nx}" y="${ny - centerRadius - 80}" font-family="Inter, Poppins, Arial, sans-serif" font-size="14" font-weight="700" fill="#111111" text-anchor="middle">${centerNode.msgs.join(", ")}</text>`;
+  }
+
+  svg += `</svg>`;
   return svg;
+}
+
+function generateSemanticNetworkSvg() {
+  return createRadialNetworkSVG(
+    "Gambar 3.183 Jaringan Semantik Pelanggan", 600, 550, 70, 
+    { id: "TA03", msgs: [] },
+    [
+      { id: "TA01", msgs: ["P01"] },
+      { id: "TA02", msgs: ["P02", "P07"] },
+      { id: "TA04", msgs: ["P03", "P09", "P15", "P17"] },
+      { id: "TA05", msgs: ["P16"] },
+      { id: "TA06", msgs: ["P06", "P11", "P12", "P13"] }
+    ]
+  );
+}
+
+function generateSemanticNetworkTeknisiSvg() {
+  return createRadialNetworkSVG(
+    "Gambar 3.184 Jaringan Semantik Teknisi", 600, 550, 70, 
+    { id: "TA07", msgs: [] },
+    [
+      { id: "TA01", msgs: ["P01"] },
+      { id: "TA06", msgs: ["P06", "P11", "P12", "P13"] },
+      { id: "TA08", msgs: ["P24", "P25"] },
+      { id: "TA09", msgs: [] },
+      { id: "TA10", msgs: ["P10", "P26", "P27", "P28"] }
+    ]
+  );
+}
+
+function generateSemanticNetworkAdminSvg() {
+  return createRadialNetworkSVG(
+    "Gambar 3.185 Jaringan Semantik Admin", 600, 550, 70, 
+    { id: "TA11", msgs: [] },
+    [
+      { id: "TA01", msgs: ["P01"] },
+      { id: "TA06", msgs: ["P04", "P05", "P06", "P11", "P12", "P13"] },
+      { id: "TA12", msgs: ["P08", "P20"] },
+      { id: "TA13", msgs: [] },
+      { id: "TA14", msgs: ["P14", "P18"] },
+      { id: "TA15", msgs: [] },
+      { id: "TA16", msgs: ["P19", "P22"] },
+      { id: "TA17", msgs: ["P23"] },
+      { id: "TA18", msgs: [] },
+      { id: "TA19", msgs: [] },
+      { id: "TA20", msgs: ["P21"] },
+      { id: "TA21", msgs: [] },
+      { id: "TA22", msgs: [] }
+    ]
+  );
 }
 
 for (const page of pages) {
@@ -1358,5 +1449,15 @@ const netSvgPath = path.join(outDir, "jaringan-semantik-pelanggan.svg");
 const netPngPath = path.join(outDir, "jaringan-semantik-pelanggan.png");
 fs.writeFileSync(netSvgPath, generateSemanticNetworkSvg(), "utf8");
 convertSvg(netSvgPath, netPngPath);
+
+const netTechSvgPath = path.join(outDir, "jaringan-semantik-teknisi.svg");
+const netTechPngPath = path.join(outDir, "jaringan-semantik-teknisi.png");
+fs.writeFileSync(netTechSvgPath, generateSemanticNetworkTeknisiSvg(), "utf8");
+convertSvg(netTechSvgPath, netTechPngPath);
+
+const netAdminSvgPath = path.join(outDir, "jaringan-semantik-admin.svg");
+const netAdminPngPath = path.join(outDir, "jaringan-semantik-admin.png");
+fs.writeFileSync(netAdminSvgPath, generateSemanticNetworkAdminSvg(), "utf8");
+convertSvg(netAdminSvgPath, netAdminPngPath);
 
 console.log(`Generated ${pages.length} interface mockups, ${dialogKeys.length} standalone message SVGs, and semantic network in ${path.relative(process.cwd(), outDir)}`);

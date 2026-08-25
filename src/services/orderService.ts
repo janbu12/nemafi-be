@@ -3,6 +3,7 @@ import { emitOrderPending, emitOrderReviewed } from "../application/socket.js";
 import { Prisma, Role, Status } from "@prisma/client";
 import ticketService from "./ticketService.js";
 import pushSubscriptionService from "./pushSubscriptionService.js";
+import notificationService from "./notificationService.js";
 
 export type OrderWithDetails = Prisma.OrderGetPayload<{
     include: {
@@ -210,6 +211,15 @@ async function rejectOrder(orderId: number, adminId: number, notes: string) {
             url: '/dashboard',
             tag: `order-rejected-${updatedOrder.id}`,
             data: { type: 'order-rejected', orderId: updatedOrder.id, userId: updatedOrder.userId },
+        }
+    );
+    notificationService.createForTargets(
+        { userIds: [updatedOrder.userId] },
+        {
+            title: 'Pendaftaran ditolak',
+            message: notes || 'Pendaftaran layanan internet Anda belum dapat disetujui karena suatu alasan.',
+            type: 'order-rejected',
+            url: '/dashboard'
         }
     );
     return updatedOrder;

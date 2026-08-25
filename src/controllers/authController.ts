@@ -31,8 +31,28 @@ async function logout(req: Request, res: Response, next: Function) {
     }
 }
 
+async function forgotPassword(req: Request, res: Response, next: Function) {
+    try {
+        const result = await authService.forgotPassword(req.body.email);
+        return success(res, result, 'Permintaan reset password berhasil diproses');
+    } catch (e) {
+        next(e);
+    }
+}
+
+async function resetPassword(req: Request, res: Response, next: Function) {
+    try {
+        const result = await authService.resetPassword(req.body);
+        return success(res, result, 'Password berhasil direset');
+    } catch (e) {
+        next(e);
+    }
+}
+
 export default {
     login,
     register,
-    logout
-}
+    logout,
+    forgotPassword,
+    resetPassword
+};
