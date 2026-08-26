@@ -240,6 +240,7 @@ model Ticket {
   history       TicketHistory[]
   attachments   TicketAttachment[]
   scheduledAt   DateTime?
+  sopProgress   Json?
   surveyRecord  TicketSurvey?       @relation("SurveyTicket")
   installationSurvey TicketSurvey?  @relation("InstallationTicket")
   createdAt     DateTime            @default(now())
@@ -252,6 +253,7 @@ model TicketCategory {
   isExpirable Boolean  @default(false)
   expireHours Int?
   requiresTechnician Boolean @default(false)
+  sopTemplate Json?
   tickets     Ticket[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

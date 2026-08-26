@@ -6,19 +6,20 @@ async function list() {
 }
 
 async function create(data: any) {
-  const { name, isExpirable, expireHours, requiresTechnician } = ticketCategoryValidation.parse(data);
+  const { name, isExpirable, expireHours, requiresTechnician, sopTemplate } = ticketCategoryValidation.parse(data);
   return prismaClient.ticketCategory.create({
     data: {
       name: name.trim().toLowerCase(),
       isExpirable: Boolean(isExpirable),
       expireHours: isExpirable ? expireHours : null,
       requiresTechnician: Boolean(requiresTechnician),
+      sopTemplate: sopTemplate && sopTemplate.length > 0 ? (sopTemplate as any) : null,
     },
   });
 }
 
 async function update(id: number, data: any) {
-  const { name, isExpirable, expireHours, requiresTechnician } = ticketCategoryValidation.parse(data);
+  const { name, isExpirable, expireHours, requiresTechnician, sopTemplate } = ticketCategoryValidation.parse(data);
   return prismaClient.ticketCategory.update({
     where: { id },
     data: {
@@ -26,6 +27,7 @@ async function update(id: number, data: any) {
       isExpirable: Boolean(isExpirable),
       expireHours: isExpirable ? expireHours : null,
       requiresTechnician: Boolean(requiresTechnician),
+      sopTemplate: sopTemplate && sopTemplate.length > 0 ? (sopTemplate as any) : null,
     },
   });
 }

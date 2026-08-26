@@ -22,6 +22,22 @@ async function getUserOrders(userId: number) {
                 include: {
                     package: true
                 }
+            },
+            tickets: {
+                include: {
+                    category: true,
+                    technician: {
+                        select: { id: true, fullname: true, email: true }
+                    },
+                    members: {
+                        include: {
+                            technician: {
+                                select: { id: true, fullname: true, email: true }
+                            }
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
             }
         },
         orderBy: { createdAt: 'desc' }

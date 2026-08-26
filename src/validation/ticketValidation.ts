@@ -21,11 +21,18 @@ export const updateTicketStatusValidation = z.object({
   status: z.nativeEnum(TicketStatus),
 });
 
+export const sopStepTemplateSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string().min(1),
+  description: z.string().optional().default(''),
+});
+
 export const ticketCategoryValidation = z.object({
   name: z.string().min(3).max(50),
   isExpirable: z.boolean().optional(),
   expireHours: z.number().int().positive().optional(),
   requiresTechnician: z.boolean().optional(),
+  sopTemplate: z.array(sopStepTemplateSchema).optional().nullable(),
 }).refine((data) => {
   if (!data.isExpirable) return true;
   return typeof data.expireHours === 'number' && data.expireHours > 0;
@@ -89,3 +96,10 @@ export const updateTicketMembersValidation = z
   .refine((data) => (data.addIds && data.addIds.length > 0) || (data.removeIds && data.removeIds.length > 0), {
     message: 'addIds or removeIds must be provided',
   });
+
+export const updateSopProgressValidation = z.object({
+  stepId: z.number().int().min(1).max(10),
+  completed: z.boolean(),
+  notes: z.string().optional(),
+});
+

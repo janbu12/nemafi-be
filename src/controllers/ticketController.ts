@@ -183,4 +183,15 @@ async function deleteCategory(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
-export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, updateMembers, getSurvey, updateSurvey, createSupport, getMySupport, getCategories, createCategory, updateCategory, deleteCategory };
+async function updateSopProgress(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const ticketId = Number(req.params.id);
+    const result = await ticketService.updateSopProgress(ticketId, req.user!, req.body);
+    return success(res, result, 'SOP progress updated');
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default { create, assign, schedule, updateStatus, getAll, getMy, getHistory, completeSurvey, reportSurveyActual, updateMembers, getSurvey, updateSurvey, createSupport, getMySupport, getCategories, createCategory, updateCategory, deleteCategory, updateSopProgress };
+

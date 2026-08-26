@@ -22,11 +22,12 @@ ticketRouter.post('/:id/complete-survey', roleMiddleware([Role.TECH_ADMIN]), tic
 ticketRouter.get('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.getSurvey);
 ticketRouter.put('/:id/survey', roleMiddleware([Role.TECH_ADMIN]), ticketController.updateSurvey);
 
-// Routes untuk Teknisi
+// Routes untuk Teknisi & Admin
 ticketRouter.get('/my-tickets', roleMiddleware([Role.TECHNICIAN]), ticketController.getMy);
 ticketRouter.patch('/:id/status', roleMiddleware([Role.TECHNICIAN]), ticketController.updateStatus);
 ticketRouter.patch('/:id/survey-actual', roleMiddleware([Role.TECHNICIAN]), ticketController.reportSurveyActual);
 ticketRouter.patch('/:id/members', roleMiddleware([Role.TECHNICIAN]), ticketController.updateMembers);
+ticketRouter.patch('/:id/sop-progress', roleMiddleware([Role.TECHNICIAN, Role.TECH_ADMIN, Role.SUPER_ADMIN]), ticketController.updateSopProgress);
 
 // Routes untuk Customer
 ticketRouter.post('/support', roleMiddleware([Role.CUSTOMER]), ticketController.createSupport);

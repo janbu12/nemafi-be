@@ -1,5 +1,5 @@
 import { prismaClient } from '../application/prisma.js';
-import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, supportTicketValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
+import { assignTicketValidation, completeSurveyValidation, createTicketValidation, scheduleTicketValidation, surveyActualValidation, supportTicketValidation, updateSopProgressValidation, updateSurveyValidation, updateTicketMembersValidation, updateTicketStatusValidation } from '../validation/ticketValidation.js';
 import { emitTicketAssignmentUpdated, emitTicketMembersUpdated, emitTicketUpdated } from '../application/socket.js';
 import { Prisma, Role, User } from '@prisma/client';
 import mikrotikService from './mikrotikService.js';
@@ -148,9 +148,19 @@ async function createTicket(data: any, actor?: User) {
   if (categoryId && !category) throw { status: 404, message: 'Ticket category not found' };
 
   const expiresAt = getExpiryFromCategory(category ?? undefined);
+  const initialSop = (category?.requiresTechnician || category?.sopTemplate)
+    ? getDefaultSopProgress(category)
+    : null;
 
   const ticket = await prismaClient.ticket.create({
-    data: { orderId, title, description, categoryId, expiresAt },
+    data: {
+      orderId,
+      title,
+      description,
+      categoryId,
+      expiresAt,
+      sopProgress: initialSop as any,
+    },
   });
 
   await addHistory(ticket.id, 'Ticket created', undefined, actor);
@@ -592,6 +602,7 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
         paymentStatus: 'PAID',
         paidAt: ticket.paidAt ?? new Date(),
         technicianId: technician?.id,
+        sopProgress: getDefaultSopProgress(installationCategory) as any,
       },
     });
 
@@ -1067,6 +1078,149 @@ async function markTicketPaid(orderId: number) {
 }
 
 
+export interface SopStep {
+  id: number;
+  title: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string | null;
+  completedBy?: { id: number; fullname: string } | null;
+  notes?: string;
+}
+
+export function getDefaultSopProgress(category?: { sopTemplate?: any } | null): SopStep[] {
+  if (category?.sopTemplate && Array.isArray(category.sopTemplate) && category.sopTemplate.length > 0) {
+    return category.sopTemplate.map((step: any, idx: number) => ({
+      id: Number(step.id) || idx + 1,
+      title: String(step.title || `Tahap ${idx + 1}`),
+      description: String(step.description || ''),
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    }));
+  }
+
+  return [
+    {
+      id: 1,
+      title: 'Teknisi Menuju Lokasi',
+      description: 'Tim teknisi dalam perjalanan menuju alamat pelanggan.',
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    },
+    {
+      id: 2,
+      title: 'Survei Titik & Cek Redaman ODP',
+      description: 'Pemeriksaan jalur kabel optik, tiang terdekat, dan pengukuran redaman sinyal ODP.',
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    },
+    {
+      id: 3,
+      title: 'Penarikan Kabel Fiber Optic (Drop Core)',
+      description: 'Penarikan dan perapihan kabel drop core dari ODP ke rumah pelanggan.',
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    },
+    {
+      id: 4,
+      title: 'Penyambungan (Splicing) & Pemasangan ONT',
+      description: 'Splicing core optik, pemasangan roset, dan penempatan modem/router ONT.',
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    },
+    {
+      id: 5,
+      title: 'Aktivasi & Uji Kecepatan (Speedtest)',
+      description: 'Sinkronisasi koneksi PPPoE ke MikroTik, pengujian bandwidth, dan serah terima.',
+      completed: false,
+      completedAt: null,
+      completedBy: null,
+      notes: '',
+    },
+  ];
+}
+
+async function updateSopProgress(ticketId: number, user: User, data: any) {
+  const { stepId, completed, notes } = updateSopProgressValidation.parse(data);
+
+  const ticket = await prismaClient.ticket.findUnique({
+    where: { id: ticketId },
+    include: { order: true, category: true, technician: true, members: true },
+  });
+
+  if (!ticket) {
+    throw { status: 404, message: 'Ticket not found' };
+  }
+
+  const isAssignedLeader = ticket.technicianId === user.id;
+  const isMember = ticket.members.some((m) => m.technicianId === user.id);
+  const isAdmin = user.role === Role.TECH_ADMIN || user.role === Role.SUPER_ADMIN;
+
+  if (!isAssignedLeader && !isMember && !isAdmin) {
+    throw { status: 403, message: 'Anda tidak memiliki akses untuk memperbarui progres SOP tiket ini' };
+  }
+
+  let currentSop: SopStep[] = Array.isArray(ticket.sopProgress) && ticket.sopProgress.length > 0
+    ? (ticket.sopProgress as any)
+    : getDefaultSopProgress(ticket.category);
+
+  const stepIndex = currentSop.findIndex((s) => s.id === stepId);
+  if (stepIndex === -1) {
+    throw { status: 400, message: `Tahapan SOP #${stepId} tidak ditemukan` };
+  }
+
+  const prevStep = currentSop[stepIndex];
+  currentSop[stepIndex] = {
+    ...prevStep,
+    completed,
+    completedAt: completed ? new Date().toISOString() : null,
+    completedBy: completed ? { id: user.id, fullname: user.fullname } : null,
+    notes: notes !== undefined ? notes : prevStep.notes,
+  };
+
+  await prismaClient.ticket.update({
+    where: { id: ticketId },
+    data: { sopProgress: currentSop as any },
+  });
+
+  const actionText = `SOP Tahap #${stepId} (${prevStep.title}): ${completed ? 'Selesai' : 'Dibatalkan'}`;
+  await addHistory(
+    ticketId,
+    'SOP Progress Updated',
+    notes ? `${actionText}. Catatan: ${notes}` : actionText,
+    user
+  );
+
+  emitTicketUpdated({ ticketId, type: 'sop-progress', sopProgress: currentSop });
+
+  if (ticket.order?.userId) {
+    pushSubscriptionService.notifyAsync(
+      { userIds: [ticket.order.userId] },
+      {
+        title: `Update Pemasangan: ${prevStep.title}`,
+        body: completed
+          ? `Tahap "${prevStep.title}" telah diselesaikan oleh tim teknisi.`
+          : `Tahap "${prevStep.title}" diperbarui oleh tim teknisi.`,
+        url: '/dashboard',
+        tag: `sop-progress-${ticketId}-${stepId}`,
+        data: { type: 'sop-progress-updated', ticketId, stepId, userId: ticket.order.userId },
+      }
+    );
+  }
+
+  return currentSop;
+}
+
 export default {
   createTicket,
   assignTicket,
@@ -1084,4 +1238,7 @@ export default {
   getMySupportTickets,
   addHistoryEntry,
   markTicketPaid,
+  updateSopProgress,
+  getDefaultSopProgress,
 };
+
