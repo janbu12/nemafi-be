@@ -4,12 +4,61 @@ import { Role } from '@prisma/client';
 const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 const CATEGORY_COLORS = ['#2563eb', '#0891b2', '#7c3aed', '#d97706', '#059669', '#dc2626', '#db2777', '#4f46e5', '#64748b'];
 
-async function getAdminDashboardStats() {
+interface DashboardFilter {
+  startDate?: string;
+  endDate?: string;
+  month?: string;
+  year?: string;
+  period?: string;
+}
+
+async function getAdminDashboardStats(filter: DashboardFilter = {}) {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+  // 0. Determine Active Filter Range
+  let isFiltered = false;
+  let filterStart = new Date(0);
+  let filterEnd = new Date(2100, 0, 1);
+  let filterLabel = 'Semua Waktu';
+  let activePeriodKey = filter.period || 'all_time';
+
+  if (filter.period === 'this_month') {
+    filterStart = startOfThisMonth;
+    filterEnd = endOfThisMonth;
+    filterLabel = `Bulan Ini (${MONTH_NAMES_ID[now.getMonth()]} ${now.getFullYear()})`;
+    isFiltered = true;
+  } else if (filter.period === 'last_month') {
+    filterStart = startOfLastMonth;
+    filterEnd = endOfLastMonth;
+    filterLabel = `Bulan Lalu (${MONTH_NAMES_ID[startOfLastMonth.getMonth()]} ${startOfLastMonth.getFullYear()})`;
+    isFiltered = true;
+  } else if (filter.period === 'this_year') {
+    filterStart = new Date(now.getFullYear(), 0, 1);
+    filterEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    filterLabel = `Tahun ${now.getFullYear()}`;
+    isFiltered = true;
+  } else if (filter.startDate && filter.endDate) {
+    filterStart = new Date(filter.startDate);
+    filterStart.setHours(0, 0, 0, 0);
+    filterEnd = new Date(filter.endDate);
+    filterEnd.setHours(23, 59, 59, 999);
+    filterLabel = `Rentang: ${filter.startDate} - ${filter.endDate}`;
+    isFiltered = true;
+    activePeriodKey = 'custom';
+  } else if (filter.startDate) {
+    filterStart = new Date(filter.startDate);
+    filterStart.setHours(0, 0, 0, 0);
+    filterEnd = new Date(filter.startDate);
+    filterEnd.setHours(23, 59, 59, 999);
+    filterLabel = `Tanggal: ${filter.startDate}`;
+    isFiltered = true;
+    activePeriodKey = 'custom';
+  }
 
   // 1. Fetch Package Categories
   const categories = await prismaClient.categoryPackage.findMany({
@@ -38,6 +87,9 @@ async function getAdminDashboardStats() {
 
   const totalCustomers = customers.length;
   const newCustomers30d = customers.filter((c) => c.createdAt >= thirtyDaysAgo).length;
+  const periodNewCustomers = isFiltered
+    ? customers.filter((c) => c.createdAt >= filterStart && c.createdAt <= filterEnd).length
+    : newCustomers30d;
 
   // Active customers: has active PPP or active order / package history
   const activeCustomersList = customers.filter((c) => {
@@ -66,21 +118,46 @@ async function getAdminDashboardStats() {
     },
   });
 
-  const paidInvoices = allInvoices.filter((inv) => inv.status === 'PAID');
-  const unpaidInvoices = allInvoices.filter((inv) => ['UNPAID', 'OVERDUE'].includes(inv.status));
-  const overdueInvoices = allInvoices.filter((inv) => inv.status === 'OVERDUE');
-  const regularUnpaidInvoices = allInvoices.filter((inv) => inv.status === 'UNPAID');
+  const allPaidInvoices = allInvoices.filter((inv) => inv.status === 'PAID');
+  const allUnpaidInvoices = allInvoices.filter((inv) => ['UNPAID', 'OVERDUE'].includes(inv.status));
+  const allOverdueInvoices = allInvoices.filter((inv) => inv.status === 'OVERDUE');
+  const allRegularUnpaidInvoices = allInvoices.filter((inv) => inv.status === 'UNPAID');
 
-  const invoicePaidRevenue = paidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  const totalRevenue = invoicePaidRevenue;
+  const totalLifetimeRevenue = allPaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+  // Filtered vs All-time sets
+  const filteredPaidInvoices = isFiltered
+    ? allPaidInvoices.filter((inv) => {
+        const pDate = inv.paidAt || inv.periodStart || inv.createdAt;
+        return pDate >= filterStart && pDate <= filterEnd;
+      })
+    : allPaidInvoices;
+
+  const filteredUnpaidInvoices = isFiltered
+    ? allUnpaidInvoices.filter((inv) => {
+        const pDate = inv.periodStart || inv.createdAt;
+        return pDate >= filterStart && pDate <= filterEnd;
+      })
+    : allUnpaidInvoices;
+
+  const periodRevenue = filteredPaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  const periodPaidCount = filteredPaidInvoices.length;
+  const periodUnpaidAmount = filteredUnpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  const periodUnpaidCount = filteredUnpaidInvoices.length;
 
   // This month revenue vs last month revenue for growth calculation
-  const thisMonthPaid = paidInvoices
-    .filter((inv) => inv.paidAt && inv.paidAt >= startOfThisMonth)
+  const thisMonthPaid = allPaidInvoices
+    .filter((inv) => {
+      const pDate = inv.paidAt || inv.periodStart;
+      return pDate && pDate >= startOfThisMonth && pDate <= endOfThisMonth;
+    })
     .reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
-  const lastMonthPaid = paidInvoices
-    .filter((inv) => inv.paidAt && inv.paidAt >= startOfLastMonth && inv.paidAt <= endOfLastMonth)
+  const lastMonthPaid = allPaidInvoices
+    .filter((inv) => {
+      const pDate = inv.paidAt || inv.periodStart;
+      return pDate && pDate >= startOfLastMonth && pDate <= endOfLastMonth;
+    })
     .reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
   const revenueGrowthPercentage =
@@ -89,12 +166,6 @@ async function getAdminDashboardStats() {
       : thisMonthPaid > 0
       ? 100
       : 0;
-
-  const totalPaidAmount = invoicePaidRevenue;
-  const paidCount = paidInvoices.length;
-
-  const totalUnpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  const unpaidCount = unpaidInvoices.length;
 
   // Helper to extract customer's current package and category
   const getCustomerPackageAndCategory = (cust: (typeof customers)[0]) => {
@@ -127,12 +198,12 @@ async function getAdminDashboardStats() {
 
     const catNewCustomers30d = catCustomers.filter((c) => c.createdAt >= thirtyDaysAgo).length;
 
-    const catPaidInvoices = paidInvoices.filter((inv) => {
+    const catPaidInvoices = filteredPaidInvoices.filter((inv) => {
       const pkg = inv.user?.packageHistory?.[0]?.package || inv.user?.orders?.[0]?.items?.[0]?.package;
       return (pkg?.category?.id ?? pkg?.categoryId) === cat.id;
     });
 
-    const catUnpaidInvoices = unpaidInvoices.filter((inv) => {
+    const catUnpaidInvoices = filteredUnpaidInvoices.filter((inv) => {
       const pkg = inv.user?.packageHistory?.[0]?.package || inv.user?.orders?.[0]?.items?.[0]?.package;
       return (pkg?.category?.id ?? pkg?.categoryId) === cat.id;
     });
@@ -232,10 +303,20 @@ async function getAdminDashboardStats() {
       };
     });
 
-  // 7. Time-series Monthly Trend for Charts (Last 6 months)
+  // 7. Time-series Monthly Trend with Cumulative Sum (Last 6 months)
+  const sixMonthsAgoStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const baselineRevenueBeforeWindow = allPaidInvoices
+    .filter((inv) => {
+      const pDate = inv.paidAt || inv.periodStart || inv.createdAt;
+      return pDate < sixMonthsAgoStart;
+    })
+    .reduce((s, inv) => s + (inv.amount || 0), 0);
+
+  let runningCumulative = baselineRevenueBeforeWindow;
   const monthlyTrends: Array<{
     month: string;
     totalRevenue: number;
+    cumulativeRevenue: number;
     newCustomers: number;
     paidInvoicesCount: number;
     unpaidInvoicesCount: number;
@@ -247,18 +328,24 @@ async function getAdminDashboardStats() {
     const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
     const monthLabel = `${MONTH_NAMES_ID[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
 
-    const mPaidInvoices = paidInvoices.filter((inv) => {
-      const pDate = inv.paidAt || inv.periodStart;
+    const mPaidInvoices = allPaidInvoices.filter((inv) => {
+      const pDate = inv.paidAt || inv.periodStart || inv.createdAt;
       return pDate >= mStart && pDate <= mEnd;
     });
 
     const mTotalRev = mPaidInvoices.reduce((s, inv) => s + (inv.amount || 0), 0);
-    const mUnpaidCount = unpaidInvoices.filter((inv) => inv.periodStart >= mStart && inv.periodStart <= mEnd).length;
+    const mUnpaidCount = allUnpaidInvoices.filter((inv) => {
+      const pDate = inv.periodStart || inv.createdAt;
+      return pDate >= mStart && pDate <= mEnd;
+    }).length;
     const mNewCust = customers.filter((c) => c.createdAt >= mStart && c.createdAt <= mEnd).length;
+
+    runningCumulative += mTotalRev;
 
     monthlyTrends.push({
       month: monthLabel,
       totalRevenue: mTotalRev,
+      cumulativeRevenue: runningCumulative,
       newCustomers: mNewCust,
       paidInvoicesCount: mPaidInvoices.length,
       unpaidInvoicesCount: mUnpaidCount,
@@ -267,10 +354,11 @@ async function getAdminDashboardStats() {
 
   // Baseline fallback if all past months are empty
   const hasMonthlyRev = monthlyTrends.some((m) => m.totalRevenue > 0);
-  if (!hasMonthlyRev && totalRevenue > 0) {
+  if (!hasMonthlyRev && totalLifetimeRevenue > 0) {
     const lastIndex = monthlyTrends.length - 1;
-    monthlyTrends[lastIndex].totalRevenue = totalRevenue;
-    monthlyTrends[lastIndex].paidInvoicesCount = paidCount;
+    monthlyTrends[lastIndex].totalRevenue = totalLifetimeRevenue;
+    monthlyTrends[lastIndex].cumulativeRevenue = totalLifetimeRevenue;
+    monthlyTrends[lastIndex].paidInvoicesCount = allPaidInvoices.length;
   }
 
   // 8. Package Popularity Breakdown
@@ -303,20 +391,30 @@ async function getAdminDashboardStats() {
     }));
 
   return {
+    filter: {
+      isFiltered,
+      label: filterLabel,
+      period: activePeriodKey,
+      startDate: filter.startDate || null,
+      endDate: filter.endDate || null,
+    },
     overview: {
-      totalRevenue,
+      totalRevenue: totalLifetimeRevenue, // All-time lifetime revenue
+      periodRevenue: isFiltered ? periodRevenue : totalLifetimeRevenue, // Selected period revenue
       thisMonthRevenue: thisMonthPaid,
+      lastMonthRevenue: lastMonthPaid,
       revenueGrowthPercentage,
       totalCustomers,
       activeCustomers: activeCustomersCount,
       newCustomers30d,
+      periodNewCustomers,
       paidInvoices: {
-        amount: totalPaidAmount,
-        count: paidCount,
+        amount: isFiltered ? periodRevenue : totalLifetimeRevenue,
+        count: isFiltered ? periodPaidCount : allPaidInvoices.length,
       },
       unpaidInvoices: {
-        amount: totalUnpaidAmount,
-        count: unpaidCount,
+        amount: isFiltered ? periodUnpaidAmount : allUnpaidInvoices.reduce((s, i) => s + (i.amount || 0), 0),
+        count: isFiltered ? periodUnpaidCount : allUnpaidInvoices.length,
       },
     },
     categories: categoriesBreakdown,
@@ -324,9 +422,32 @@ async function getAdminDashboardStats() {
       monthlyTrends,
       categoryDistribution,
       billingStatusDistribution: [
-        { name: 'Lunas', value: paidCount, amount: totalPaidAmount, color: '#10b981' },
-        { name: 'Belum Dibayar', value: regularUnpaidInvoices.length, amount: regularUnpaidInvoices.reduce((s, i) => s + i.amount, 0), color: '#f59e0b' },
-        { name: 'Jatuh Tempo', value: overdueInvoices.length, amount: overdueInvoices.reduce((s, i) => s + i.amount, 0), color: '#ef4444' },
+        {
+          name: 'Lunas',
+          value: isFiltered ? periodPaidCount : allPaidInvoices.length,
+          amount: isFiltered ? periodRevenue : totalLifetimeRevenue,
+          color: '#10b981',
+        },
+        {
+          name: 'Belum Dibayar',
+          value: isFiltered
+            ? filteredUnpaidInvoices.filter((i) => i.status === 'UNPAID').length
+            : allRegularUnpaidInvoices.length,
+          amount: isFiltered
+            ? filteredUnpaidInvoices.filter((i) => i.status === 'UNPAID').reduce((s, i) => s + (i.amount || 0), 0)
+            : allRegularUnpaidInvoices.reduce((s, i) => s + (i.amount || 0), 0),
+          color: '#f59e0b',
+        },
+        {
+          name: 'Jatuh Tempo',
+          value: isFiltered
+            ? filteredUnpaidInvoices.filter((i) => i.status === 'OVERDUE').length
+            : allOverdueInvoices.length,
+          amount: isFiltered
+            ? filteredUnpaidInvoices.filter((i) => i.status === 'OVERDUE').reduce((s, i) => s + (i.amount || 0), 0)
+            : allOverdueInvoices.reduce((s, i) => s + (i.amount || 0), 0),
+          color: '#ef4444',
+        },
       ],
       popularPackages,
     },

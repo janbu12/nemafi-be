@@ -8,8 +8,115 @@ import { Role, User } from '@prisma/client';
 
 // User CRUD
 async function listUsers() {
-    const users = await prismaClient.user.findMany({ orderBy: { id: 'asc' } });
-    return users.map(toUserDto);
+    const users = await prismaClient.user.findMany({
+        orderBy: { id: 'asc' },
+        include: {
+            profile: { include: { router: true } },
+            billingInvoices: { orderBy: { dueAt: 'desc' } },
+            packageHistory: {
+                where: { endedAt: null },
+                include: { package: { include: { category: true } } },
+                orderBy: { startedAt: 'desc' },
+            },
+            orders: {
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    items: { include: { package: { include: { category: true } } } },
+                },
+            },
+        },
+    });
+
+    return users.map((user: any) => {
+        const dto = toUserDto(user);
+        const profile = user.profile ?? null;
+        const currentPackage =
+            user.packageHistory?.[0]?.package || user.orders?.[0]?.items?.[0]?.package || null;
+        const latestOrder = user.orders?.[0] || null;
+        const invoices = user.billingInvoices || [];
+        const latestInvoice = invoices[0] || null;
+
+        // 1. Service Status
+        let serviceStatus: 'ACTIVE' | 'SUSPENDED' | 'PENDING_INSTALLATION' = 'PENDING_INSTALLATION';
+        if (profile && profile.isPppActive === false) {
+            serviceStatus = 'SUSPENDED';
+        } else if (
+            user.packageHistory?.length > 0 ||
+            (latestOrder && ['COMPLETED', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS', 'REVIEW_APPROVED'].includes(latestOrder.status))
+        ) {
+            if (
+                latestOrder &&
+                ['PENDING_REVIEW', 'SURVEY_SCHEDULED', 'SURVEY_COMPLETED', 'WAITING_FOR_ASSIGNMENT', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS'].includes(latestOrder.status) &&
+                user.packageHistory?.length === 0
+            ) {
+                serviceStatus = 'PENDING_INSTALLATION';
+            } else {
+                serviceStatus = 'ACTIVE';
+            }
+        }
+
+        // 2. Billing Status
+        let billingStatus: 'PAID' | 'UNPAID' | 'OVERDUE' | 'NO_INVOICE' = 'NO_INVOICE';
+        if (invoices.some((inv: any) => inv.status === 'OVERDUE')) {
+            billingStatus = 'OVERDUE';
+        } else if (invoices.some((inv: any) => inv.status === 'UNPAID')) {
+            billingStatus = 'UNPAID';
+        } else if (invoices.some((inv: any) => inv.status === 'PAID')) {
+            billingStatus = 'PAID';
+        }
+
+        return {
+            ...dto,
+            profile: profile
+                ? {
+                      id: profile.id,
+                      phone_number: profile.phone_number,
+                      full_address: profile.full_address,
+                      province: profile.province,
+                      city: profile.city,
+                      district: profile.district,
+                      subdistrict: profile.subdistrict,
+                      latitude: profile.latitude,
+                      longitude: profile.longitude,
+                      pppUsername: profile.pppUsername,
+                      pppProfile: profile.pppProfile,
+                      isPppActive: profile.isPppActive,
+                      routerId: profile.routerId,
+                      router: profile.router ? { id: profile.router.id, name: profile.router.name, host: profile.router.host } : null,
+                  }
+                : null,
+            serviceStatus,
+            billingStatus,
+            currentPackage: currentPackage
+                ? {
+                      id: currentPackage.id,
+                      name: currentPackage.name,
+                      price: currentPackage.price,
+                      downloadSpeed: currentPackage.downloadSpeed,
+                      uploadSpeed: currentPackage.uploadSpeed,
+                      categoryId: currentPackage.categoryId,
+                      categoryName: currentPackage.category?.name || 'Umum',
+                  }
+                : null,
+            latestOrder: latestOrder
+                ? {
+                      id: latestOrder.id,
+                      status: latestOrder.status,
+                      createdAt: latestOrder.createdAt,
+                  }
+                : null,
+            latestInvoice: latestInvoice
+                ? {
+                      id: latestInvoice.id,
+                      invoiceNumber: latestInvoice.invoiceNumber,
+                      amount: latestInvoice.amount,
+                      status: latestInvoice.status,
+                      dueAt: latestInvoice.dueAt,
+                      paidAt: latestInvoice.paidAt,
+                  }
+                : null,
+        };
+    });
 }
 
 async function listTechnicians() {
