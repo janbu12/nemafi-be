@@ -122,9 +122,13 @@ async function listUsers() {
 async function listTechnicians() {
     const users = await prismaClient.user.findMany({
         where: { role: 'TECHNICIAN' },
+        include: { profile: true },
         orderBy: { fullname: 'asc' },
     });
-    return users.map(toUserDto);
+    return users.map((u) => ({
+        ...toUserDto(u),
+        profile: u.profile ?? null,
+    }));
 }
 
 async function getUser(id: number) {
@@ -156,18 +160,45 @@ async function getUser(id: number) {
     };
 }
 
-async function createUser(actor: User, input: { email: string, name?: string, password: string, role?: Role }) {
+async function createUser(actor: User, input: any) {
     const data = createUserValidation.parse(input);
     const requestedRole = (data.role ?? 'CUSTOMER') as Role;
-    const restrictedRoles: Role[] = [Role.TECH_ADMIN, Role.TECHNICIAN];
+    const restrictedRoles: Role[] = [Role.SUPER_ADMIN];
     if (restrictedRoles.includes(requestedRole) && actor.role !== Role.SUPER_ADMIN) {
-        throw { status: 403, message: 'Only super admin can assign admin or technician role' };
+        throw { status: 403, message: 'Hanya Super Admin yang dapat membuat Super Admin baru' };
     }
+
+    const existingUser = await prismaClient.user.findUnique({ where: { email: data.email } });
+    if (existingUser) {
+        throw { status: 400, message: 'Email sudah terdaftar' };
+    }
+
     const hashed = await bcrypt.hash(data.password, 10);
     const user = await prismaClient.user.create({
-        data: { email: data.email, fullname: data.name, password: hashed, role: requestedRole }
+        data: {
+            email: data.email,
+            fullname: data.fullname || data.name || '',
+            password: hashed,
+            role: requestedRole,
+            profile: (data.phone_number || data.full_address)
+                ? {
+                    create: {
+                        phone_number: data.phone_number || '',
+                        full_address: data.full_address || '',
+                        province: data.province || '',
+                        city: data.city || '',
+                        district: data.district || '',
+                        subdistrict: data.subdistrict || '',
+                    },
+                }
+                : undefined,
+        },
+        include: { profile: true },
     });
-    return toUserDto(user);
+    return {
+        ...toUserDto(user),
+        profile: user.profile ?? null,
+    };
 }
 
 async function createCustomer(actor: User, input: any) {
@@ -267,9 +298,84 @@ async function createCustomer(actor: User, input: any) {
     return toUserDto(user.user);
 }
 
-async function updateUser(id: number, input: { email?: string, name?: string | null }) {
+async function updateUser(id: number, input: any) {
     const data = updateUserValidation.parse(input);
-    return prismaClient.user.update({ where: { id }, data });
+
+    const existing = await prismaClient.user.findUnique({
+        where: { id },
+        include: { profile: true },
+    });
+    if (!existing) {
+        throw { status: 404, message: 'Pengguna tidak ditemukan' };
+    }
+
+    if (data.email && data.email !== existing.email) {
+        const emailInUse = await prismaClient.user.findUnique({ where: { email: data.email } });
+        if (emailInUse) {
+            throw { status: 400, message: 'Email sudah digunakan oleh akun lain' };
+        }
+    }
+
+    const userUpdateData: any = {};
+    if (data.email) userUpdateData.email = data.email;
+    if (data.fullname || data.name) userUpdateData.fullname = data.fullname || data.name;
+    if (data.role) userUpdateData.role = data.role;
+    if (data.password) userUpdateData.password = await bcrypt.hash(data.password, 10);
+
+    const profileUpdateData: any = {};
+    if (data.phone_number !== undefined) profileUpdateData.phone_number = data.phone_number;
+    if (data.full_address !== undefined) profileUpdateData.full_address = data.full_address;
+    if (data.province !== undefined) profileUpdateData.province = data.province;
+    if (data.city !== undefined) profileUpdateData.city = data.city;
+    if (data.district !== undefined) profileUpdateData.district = data.district;
+    if (data.subdistrict !== undefined) profileUpdateData.subdistrict = data.subdistrict;
+    if (data.latitude !== undefined) profileUpdateData.latitude = data.latitude;
+    if (data.longitude !== undefined) profileUpdateData.longitude = data.longitude;
+    if (data.routerId !== undefined) profileUpdateData.routerId = data.routerId ? Number(data.routerId) : null;
+    if (data.pppUsername !== undefined) profileUpdateData.pppUsername = data.pppUsername;
+    if (data.pppProfile !== undefined) profileUpdateData.pppProfile = data.pppProfile;
+    if (data.isPppActive !== undefined) profileUpdateData.isPppActive = data.isPppActive;
+
+    const updatedUser = await prismaClient.$transaction(async (tx) => {
+        if (Object.keys(userUpdateData).length > 0) {
+            await tx.user.update({
+                where: { id },
+                data: userUpdateData,
+            });
+        }
+
+        if (Object.keys(profileUpdateData).length > 0) {
+            if (existing.profile) {
+                await tx.profile.update({
+                    where: { user_id: id },
+                    data: profileUpdateData,
+                });
+            } else {
+                await tx.profile.create({
+                    data: {
+                        user_id: id,
+                        phone_number: profileUpdateData.phone_number || '',
+                        full_address: profileUpdateData.full_address || '',
+                        province: profileUpdateData.province || '',
+                        city: profileUpdateData.city || '',
+                        district: profileUpdateData.district || '',
+                        subdistrict: profileUpdateData.subdistrict || '',
+                        ...profileUpdateData,
+                    },
+                });
+            }
+        }
+
+        return tx.user.findUnique({
+            where: { id },
+            include: { profile: { include: { router: true } } },
+        });
+    });
+
+    return {
+        ...toUserDto(updatedUser!),
+        profile: updatedUser?.profile ?? null,
+    };
 }
 
 async function deleteUser(id: number) {
