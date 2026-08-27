@@ -11,3 +11,5 @@ settingsRouter.use(roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN]));
 
 settingsRouter.get('/billing', billingSettingsController.getSettings);
 settingsRouter.put('/billing', billingSettingsController.updateSettings);
+settingsRouter.post('/billing/trigger-suspend', billingSettingsController.triggerSuspend);
+settingsRouter.post('/billing/trigger-renew', billingSettingsController.triggerRenew);

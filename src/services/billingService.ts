@@ -213,18 +213,27 @@ async function getInvoiceById(id: number) {
   };
 }
 
-async function applyOverdueSuspension(graceDays = 3) {
+async function applyOverdueSuspension(graceDays = 0) {
   const now = new Date();
-  const overdueThreshold = new Date(now.getTime() - graceDays * 24 * 60 * 60 * 1000);
+  const overdueThreshold = new Date(now.getTime() - Math.max(0, graceDays) * 24 * 60 * 60 * 1000);
 
   const overdueInvoices = await prismaClient.billingInvoice.findMany({
     where: {
       status: 'UNPAID',
       dueAt: { lt: overdueThreshold },
     },
+    include: {
+      user: {
+        include: {
+          profile: true,
+        },
+      },
+    },
   });
 
-  if (overdueInvoices.length === 0) return { updated: 0 };
+  if (overdueInvoices.length === 0) {
+    return { updated: 0, userCount: 0, invoiceIds: [] };
+  }
 
   const userIds = Array.from(new Set(overdueInvoices.map((invoice) => invoice.userId)));
 
@@ -232,23 +241,26 @@ async function applyOverdueSuspension(graceDays = 3) {
     where: { id: { in: overdueInvoices.map((invoice) => invoice.id) } },
     data: { status: 'OVERDUE' },
   });
+
   emitBillingUpdated({ type: 'overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) });
+
   pushSubscriptionService.notifyAsync(
     { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
     {
       title: 'Tagihan jatuh tempo',
-      body: `${overdueInvoices.length} tagihan melewati masa tenggang.`,
+      body: `${overdueInvoices.length} tagihan telah melewati jatuh tempo (Tutup Buku).`,
       url: '/admin/transactions',
       tag: 'billing-overdue',
       data: { type: 'billing-overdue', invoiceIds: overdueInvoices.map((invoice) => invoice.id) },
     }
   );
+
   overdueInvoices.forEach((invoice) => {
     pushSubscriptionService.notifyAsync(
       { userIds: [invoice.userId] },
       {
         title: 'Tagihan jatuh tempo',
-        body: `Invoice #${invoice.id} telah melewati masa tenggang.`,
+        body: `Invoice #${invoice.id} telah melewati batas jatuh tempo. Layanan sementara diisolir.`,
         url: '/dashboard/billing',
         tag: `billing-overdue-customer-${invoice.id}`,
         data: { type: 'billing-overdue-customer', invoiceId: invoice.id, userId: invoice.userId },
@@ -279,7 +291,7 @@ async function applyOverdueSuspension(graceDays = 3) {
       await prismaClient.suspensionHistory.create({
         data: {
           userId,
-          reason: 'Tagihan menunggak melebihi masa tenggang',
+          reason: 'Tagihan menunggak melewati batas jatuh tempo (Tutup Buku)',
           suspendedAt: now,
         },
       });
@@ -287,7 +299,7 @@ async function applyOverdueSuspension(graceDays = 3) {
         { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN] },
         {
           title: 'Layanan disuspend otomatis',
-          body: `Layanan pelanggan #${userId} diisolasi karena tunggakan.`,
+          body: `Layanan pelanggan #${userId} diisolir karena melewati batas jatuh tempo.`,
           url: `/admin/customers/${userId}`,
           tag: `service-suspended-${userId}`,
           data: { type: 'service-suspended', userId },
@@ -296,8 +308,8 @@ async function applyOverdueSuspension(graceDays = 3) {
       pushSubscriptionService.notifyAsync(
         { userIds: [userId] },
         {
-          title: 'Layanan disuspend',
-          body: 'Layanan internet Anda sementara dinonaktifkan karena tagihan melewati masa tenggang.',
+          title: 'Layanan diisolir',
+          body: 'Layanan internet Anda dinonaktifkan sementara karena tagihan melewati batas jatuh tempo. Silakan lakukan pembayaran untuk membuka isolir otomatis.',
           url: '/dashboard/billing',
           tag: `service-suspended-customer-${userId}`,
           data: { type: 'service-suspended-customer', userId },
@@ -306,7 +318,7 @@ async function applyOverdueSuspension(graceDays = 3) {
     }
   }
 
-  return { updated: overdueInvoices.length };
+  return { updated: overdueInvoices.length, userCount: userIds.length, invoiceIds: overdueInvoices.map((i) => i.id) };
 }
 
 async function generateMonthlyInvoices() {
@@ -334,9 +346,15 @@ async function generateMonthlyInvoices() {
       }
     }
 
-    const periodStart = lastInvoice ? new Date(lastInvoice.periodEnd) : now;
-    const periodEnd = new Date(periodStart.getTime() + settings.periodDays * 24 * 60 * 60 * 1000);
-    const dueAt = new Date(periodStart.getTime() + settings.dueDays * 24 * 60 * 60 * 1000);
+    // Determine period: 1st of month to end of month
+    const startYear = now.getFullYear();
+    const startMonth = now.getMonth();
+    const periodStart = lastInvoice ? new Date(lastInvoice.periodEnd) : new Date(startYear, startMonth, 1, 0, 0, 0);
+    const lastDayOfMonth = new Date(startYear, startMonth + 1, 0, 23, 59, 59);
+    const periodEnd = lastDayOfMonth;
+
+    const dueDay = Math.min(Math.max(1, settings.dueDays || 20), lastDayOfMonth.getDate());
+    const dueAt = new Date(startYear, startMonth, dueDay, 23, 59, 59);
 
     const invoice = await prismaClient.billingInvoice.create({
       data: {
@@ -348,11 +366,12 @@ async function generateMonthlyInvoices() {
         status: 'UNPAID',
       },
     });
+
     pushSubscriptionService.notifyAsync(
       { userIds: [active.userId] },
       {
-        title: 'Tagihan baru',
-        body: `Tagihan ${active.package?.name || 'layanan internet'} telah tersedia.`,
+        title: 'Tagihan baru diterbitkan',
+        body: `Tagihan periode ${periodStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })} telah tersedia. Batas bayar tgl ${dueDay}.`,
         url: '/dashboard/billing',
         tag: `billing-new-${invoice.id}`,
         data: { type: 'billing-new', invoiceId: invoice.id, userId: active.userId },

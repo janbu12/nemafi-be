@@ -20,7 +20,36 @@ async function updateSettings(req: Request, res: Response, next: Function) {
   }
 }
 
+async function triggerSuspend(_req: Request, res: Response, next: Function) {
+  try {
+    const settings = await billingService.getBillingSettings();
+    const result = await billingService.applyOverdueSuspension(settings.graceDays);
+    return success(
+      res,
+      result,
+      `Pengecekan jatuh tempo selesai: ${result.updated} faktur diubah menjadi OVERDUE (${result.userCount} pelanggan diisolir)`
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function triggerRenew(_req: Request, res: Response, next: Function) {
+  try {
+    const result = await billingService.generateMonthlyInvoices();
+    return success(
+      res,
+      result,
+      `Penerbitan tagihan bulanan selesai: ${result.created} faktur baru berhasil dibuat`
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
   getSettings,
   updateSettings,
+  triggerSuspend,
+  triggerRenew,
 };
