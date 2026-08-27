@@ -352,6 +352,13 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
       await provisionPppProfileFromTicket(updated.id);
     }
 
+    if (['RESOLVED', 'CLOSED'].includes(status) && ticket.orderId) {
+      await prismaClient.order.update({
+        where: { id: ticket.orderId },
+        data: { status: 'COMPLETED' },
+      });
+    }
+
     emitTicketUpdated({ ticketId: updated.id, type: 'status', status });
     pushSubscriptionService.notifyAsync(
       { userIds: [ticket.order.userId] },
@@ -1192,6 +1199,24 @@ async function updateSopProgress(ticketId: number, user: User, data: any) {
     where: { id: ticketId },
     data: { sopProgress: currentSop as any },
   });
+
+  const allCompleted = currentSop.every((s) => s.completed);
+  if (allCompleted) {
+    if (['OPEN', 'SCHEDULED', 'IN_PROGRESS'].includes(ticket.status)) {
+      await prismaClient.ticket.update({
+        where: { id: ticketId },
+        data: { status: 'RESOLVED' },
+      });
+      await addHistory(ticketId, 'Status changed to RESOLVED', 'Semua tahapan SOP instalasi telah diselesaikan', user);
+    }
+    if (ticket.orderId) {
+      await prismaClient.order.update({
+        where: { id: ticket.orderId },
+        data: { status: 'COMPLETED' },
+      });
+    }
+    await provisionPppProfileFromTicket(ticketId);
+  }
 
   const actionText = `SOP Tahap #${stepId} (${prevStep.title}): ${completed ? 'Selesai' : 'Dibatalkan'}`;
   await addHistory(
