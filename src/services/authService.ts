@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { loginValidation, registerValidation } from "../validation/authValidation.js";
 import { toUserDto } from "../utils/userDto.js";
 import coveredAreaService from "./coveredAreaService.js";
+import pushSubscriptionService from "./pushSubscriptionService.js";
+import { Role } from '@prisma/client';
 
 // Auth
 async function registerUser(input: {
@@ -139,6 +141,30 @@ async function registerUser(input: {
             emitOrderPending(order);
         }
     }
+
+    // Kirim notifikasi ke Admin & Teknisi terkait pendaftaran pelanggan baru
+    pushSubscriptionService.notifyAsync(
+        { roles: [Role.TECH_ADMIN, Role.SUPER_ADMIN] },
+        {
+            title: 'Pendaftaran Pelanggan Baru',
+            body: `${user.fullname} mendaftar paket ${selectedPackage.name} (${user.email}).`,
+            url: `/admin/customers/${user.id}`,
+            tag: `customer-registered-${user.id}`,
+            data: { type: 'registration', userId: user.id, packageId: selectedPackage.id, orderId: createdOrderId },
+        }
+    );
+
+    // Kirim notifikasi selamat datang ke Pelanggan yang baru mendaftar
+    pushSubscriptionService.notifyAsync(
+        { userIds: [user.id] },
+        {
+            title: 'Selamat Datang di NEMAFI Network!',
+            body: `Pendaftaran Anda untuk paket ${selectedPackage.name} telah berhasil kami terima. Menunggu verifikasi admin.`,
+            url: '/dashboard',
+            tag: `welcome-customer-${user.id}`,
+            data: { type: 'registration', userId: user.id },
+        }
+    );
 
     const token = utils.generateToken(user.id, user.email);
     return { user: toUserDto(user), token };
