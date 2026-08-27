@@ -4,6 +4,7 @@ import { success } from '../utils/responseHandler.js';
 import mikrotikService from '../services/mikrotikService.js';
 import jwt from 'jsonwebtoken';
 import http from 'http';
+import zlib from 'zlib';
 import { prismaClient } from '../application/prisma.js';
 import operationalNotificationService from '../services/operationalNotificationService.js';
 
@@ -154,6 +155,89 @@ async function createWebfigSession(req: Request, res: Response, next: NextFuncti
   }
 }
 
+function createSsoScript(router: { name: string; username: string; password: string }) {
+  const routerUser = JSON.stringify(router.username);
+  const routerPass = JSON.stringify(router.password);
+  const routerName = JSON.stringify(router.name);
+
+  return `
+<!-- NEMAFI WEBFIG SINGLE SIGN-ON AUTO-LOGIN INJECTION -->
+<div id="nemafi-sso-toast" style="position: fixed; top: 16px; right: 16px; z-index: 999999; background: #0f172a; color: #fff; border: 1px solid #ea580c; padding: 10px 16px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px; transition: opacity 0.5s ease; pointer-events: none;">
+  <div style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></div>
+  <div>
+    <div style="font-weight: 700; color: #f97316;">NEMAFI SSO Auto-Login</div>
+    <div style="font-size: 11px; color: #94a3b8;">Mengautentikasi ke ${router.name}...</div>
+  </div>
+</div>
+<script>
+(function() {
+  var routerUser = ${routerUser};
+  var routerPass = ${routerPass};
+  var routerName = ${routerName};
+  var attempts = 0;
+  var maxAttempts = 40; // check for up to 8 seconds
+
+  function tryAutoLogin() {
+    attempts++;
+    var userInput = document.querySelector('input[name="name"]') ||
+                    document.getElementById('name') ||
+                    document.querySelector('input[name="username"]') ||
+                    document.querySelector('input[type="text"]');
+
+    var passInput = document.querySelector('input[name="password"]') ||
+                    document.getElementById('password') ||
+                    document.querySelector('input[type="password"]');
+
+    var loginBtn = document.querySelector('input[type="submit"]') ||
+                   document.querySelector('button[type="submit"]') ||
+                   document.querySelector('.login-btn') ||
+                   document.getElementById('login');
+
+    if (userInput && passInput) {
+      userInput.value = routerUser;
+      passInput.value = routerPass;
+
+      userInput.dispatchEvent(new Event('input', { bubbles: true }));
+      userInput.dispatchEvent(new Event('change', { bubbles: true }));
+      passInput.dispatchEvent(new Event('input', { bubbles: true }));
+      passInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+      console.log('[NEMAFI SSO] Credentials autofilled for ' + routerName);
+
+      if (loginBtn && typeof loginBtn.click === 'function') {
+        setTimeout(function() {
+          try {
+            loginBtn.click();
+            console.log('[NEMAFI SSO] Login button auto-clicked.');
+            var toast = document.getElementById('nemafi-sso-toast');
+            if (toast) {
+              toast.innerHTML = '<div style="width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;"></div><div><div style="font-weight:700;color:#22c55e;">Terautentikasi</div><div style="font-size:11px;color:#94a3b8;">Berhasil masuk ke ' + routerName + '</div></div>';
+              setTimeout(function() {
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 500);
+              }, 2500);
+            }
+          } catch(e) {}
+        }, 300);
+      }
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      setTimeout(tryAutoLogin, 200);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryAutoLogin);
+  } else {
+    tryAutoLogin();
+  }
+})();
+</script>
+`;
+}
+
 async function webfigProxy(req: Request, res: Response) {
   try {
     const cookies = parseCookies(req.headers.cookie);
@@ -203,19 +287,25 @@ async function webfigProxy(req: Request, res: Response) {
 
     console.log(`[Proxy Request] ${req.method} ${req.originalUrl} -> http://${host}:${port}${req.originalUrl}`);
 
+    const proxyHeaders = { ...req.headers };
+    delete proxyHeaders['accept-encoding']; // Ask target router to return uncompressed HTML
+    proxyHeaders.host = `${host}:${port}`;
+
     const proxyReq = http.request(
       {
         host,
         port,
         path: req.originalUrl,
         method: req.method,
-        headers: {
-          ...req.headers,
-          host: `${host}:${port}`,
-        },
+        headers: proxyHeaders,
       },
       (proxyRes) => {
         const headers = { ...proxyRes.headers };
+        const contentType = (headers['content-type'] || '').toLowerCase();
+        const isHtml =
+          contentType.includes('text/html') ||
+          (!contentType && (req.originalUrl === '/' || req.originalUrl.startsWith('/webfig')));
+
         if (headers.location) {
           let loc = headers.location;
           if (loc.startsWith('http://') || loc.startsWith('https://')) {
@@ -228,9 +318,45 @@ async function webfigProxy(req: Request, res: Response) {
           }
           headers.location = loc;
         }
-        console.log(`[Proxy Response] ${req.method} ${req.originalUrl} -> Status: ${proxyRes.statusCode}, Location: ${headers.location || 'none'}`);
-        res.writeHead(proxyRes.statusCode || 200, headers);
-        proxyRes.pipe(res, { end: true });
+
+        if (isHtml) {
+          const chunks: Buffer[] = [];
+          proxyRes.on('data', (chunk) => chunks.push(chunk));
+          proxyRes.on('end', () => {
+            let buffer = Buffer.concat(chunks);
+            const encoding = headers['content-encoding'];
+
+            if (encoding === 'gzip') {
+              try { buffer = zlib.gunzipSync(buffer); } catch {}
+            } else if (encoding === 'deflate') {
+              try { buffer = zlib.inflateSync(buffer); } catch {}
+            } else if (encoding === 'br') {
+              try { buffer = zlib.brotliDecompressSync(buffer); } catch {}
+            }
+
+            let html = buffer.toString('utf-8');
+            const injection = createSsoScript({
+              name: router.name,
+              username: router.user,
+              password: router.password,
+            });
+
+            if (html.includes('</body>')) {
+              html = html.replace('</body>', `${injection}</body>`);
+            } else {
+              html += injection;
+            }
+
+            delete headers['content-encoding'];
+            headers['content-length'] = Buffer.byteLength(html, 'utf-8').toString();
+            res.writeHead(proxyRes.statusCode || 200, headers);
+            res.end(html);
+          });
+        } else {
+          // Direct streaming for static assets (images, js, css, etc.)
+          res.writeHead(proxyRes.statusCode || 200, headers);
+          proxyRes.pipe(res, { end: true });
+        }
       }
     );
 
