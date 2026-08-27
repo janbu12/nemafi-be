@@ -38,21 +38,27 @@ async function listUsers() {
 
         // 1. Service Status
         let serviceStatus: 'ACTIVE' | 'SUSPENDED' | 'PENDING_INSTALLATION' = 'PENDING_INSTALLATION';
-        if (profile && profile.isPppActive === false) {
+        const hasPendingInstallationOrder = latestOrder && [
+            'PENDING_REVIEW',
+            'REVIEW_APPROVED',
+            'WAITING_FOR_ASSIGNMENT',
+            'SURVEY_SCHEDULED',
+            'SURVEY_COMPLETED',
+            'TECHNICIAN_ASSIGNED',
+            'INSTALLATION_IN_PROGRESS',
+        ].includes(latestOrder.status);
+
+        if (hasPendingInstallationOrder) {
+            serviceStatus = 'PENDING_INSTALLATION';
+        } else if (profile && profile.isPppActive === false) {
             serviceStatus = 'SUSPENDED';
         } else if (
-            user.packageHistory?.length > 0 ||
-            (latestOrder && ['COMPLETED', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS', 'REVIEW_APPROVED'].includes(latestOrder.status))
+            (latestOrder && latestOrder.status === 'COMPLETED') ||
+            (user.packageHistory && user.packageHistory.some((ph: any) => !ph.endedAt) && profile?.isPppActive === true)
         ) {
-            if (
-                latestOrder &&
-                ['PENDING_REVIEW', 'SURVEY_SCHEDULED', 'SURVEY_COMPLETED', 'WAITING_FOR_ASSIGNMENT', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS'].includes(latestOrder.status) &&
-                user.packageHistory?.length === 0
-            ) {
-                serviceStatus = 'PENDING_INSTALLATION';
-            } else {
-                serviceStatus = 'ACTIVE';
-            }
+            serviceStatus = 'ACTIVE';
+        } else {
+            serviceStatus = 'PENDING_INSTALLATION';
         }
 
         // 2. Billing Status

@@ -91,14 +91,24 @@ async function getAdminDashboardStats(filter: DashboardFilter = {}) {
     ? customers.filter((c) => c.createdAt >= filterStart && c.createdAt <= filterEnd).length
     : newCustomers30d;
 
-  // Active customers: has active PPP or active order / package history
+  // Active customers: has completed order or active package, and not suspended, and not in pending installation
   const activeCustomersList = customers.filter((c) => {
     if (c.profile && c.profile.isPppActive === false) return false;
-    const hasActiveOrder = c.orders.some((o) =>
-      ['COMPLETED', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS', 'REVIEW_APPROVED'].includes(o.status)
-    );
-    const hasPackage = c.packageHistory.length > 0;
-    return hasActiveOrder || hasPackage;
+    const latestOrder = c.orders[0];
+    const hasPendingOrder = latestOrder && [
+      'PENDING_REVIEW',
+      'REVIEW_APPROVED',
+      'WAITING_FOR_ASSIGNMENT',
+      'SURVEY_SCHEDULED',
+      'SURVEY_COMPLETED',
+      'TECHNICIAN_ASSIGNED',
+      'INSTALLATION_IN_PROGRESS',
+    ].includes(latestOrder.status);
+    if (hasPendingOrder) return false;
+
+    const hasCompletedOrder = c.orders.some((o) => o.status === 'COMPLETED');
+    const hasActivePackage = c.packageHistory.some((ph: any) => !ph.endedAt);
+    return hasCompletedOrder || hasActivePackage;
   });
   const activeCustomersCount = activeCustomersList.length;
 
@@ -141,8 +151,8 @@ async function getAdminDashboardStats(filter: DashboardFilter = {}) {
     : allUnpaidInvoices;
 
   const periodRevenue = filteredPaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  const periodPaidCount = filteredPaidInvoices.length;
   const periodUnpaidAmount = filteredUnpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  const periodPaidCount = filteredPaidInvoices.length;
   const periodUnpaidCount = filteredUnpaidInvoices.length;
 
   // This month revenue vs last month revenue for growth calculation
@@ -189,11 +199,21 @@ async function getAdminDashboardStats(filter: DashboardFilter = {}) {
 
     const catActiveCustomers = catCustomers.filter((c) => {
       if (c.profile && c.profile.isPppActive === false) return false;
-      const hasActiveOrder = c.orders.some((o) =>
-        ['COMPLETED', 'TECHNICIAN_ASSIGNED', 'INSTALLATION_IN_PROGRESS', 'REVIEW_APPROVED'].includes(o.status)
-      );
-      const hasPackage = c.packageHistory.length > 0;
-      return hasActiveOrder || hasPackage;
+      const latestOrder = c.orders[0];
+      const hasPendingOrder = latestOrder && [
+        'PENDING_REVIEW',
+        'REVIEW_APPROVED',
+        'WAITING_FOR_ASSIGNMENT',
+        'SURVEY_SCHEDULED',
+        'SURVEY_COMPLETED',
+        'TECHNICIAN_ASSIGNED',
+        'INSTALLATION_IN_PROGRESS',
+      ].includes(latestOrder.status);
+      if (hasPendingOrder) return false;
+
+      const hasCompletedOrder = c.orders.some((o) => o.status === 'COMPLETED');
+      const hasActivePackage = c.packageHistory.some((ph: any) => !ph.endedAt);
+      return hasCompletedOrder || hasActivePackage;
     });
 
     const catNewCustomers30d = catCustomers.filter((c) => c.createdAt >= thirtyDaysAgo).length;
