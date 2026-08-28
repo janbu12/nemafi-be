@@ -13,15 +13,46 @@ async function create(data: any) {
 }
 
 async function getAll() {
-    return prismaClient.router.findMany({
+    const routers = await prismaClient.router.findMany({
         orderBy: { name: 'asc' },
+        include: {
+            _count: {
+                select: { profiles: true },
+            },
+        },
+    });
+    return routers.map((r) => {
+        const capacity = r.capacity ?? 40;
+        const connectedCustomers = r._count.profiles;
+        return {
+            ...r,
+            capacity,
+            connectedCustomers,
+            usedCapacity: connectedCustomers,
+            isFull: connectedCustomers >= capacity,
+        };
     });
 }
 
 async function getById(id: number) {
-    return prismaClient.router.findUnique({
+    const r = await prismaClient.router.findUnique({
         where: { id },
+        include: {
+            _count: {
+                select: { profiles: true },
+            },
+        },
     });
+    if (!r) return null;
+    const capacity = r.capacity ?? 40;
+    const connectedCustomers = r._count.profiles;
+    return {
+        ...r,
+        capacity,
+        connectedCustomers,
+        usedCapacity: connectedCustomers,
+        isFull: connectedCustomers >= capacity,
+    };
 }
 
 async function update(id: number, data: any) {

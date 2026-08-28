@@ -9,7 +9,7 @@ export const routerRoutes = Router();
 // Endpoint untuk inisialisasi sesi Webfig (diakses via query token/Authorization header)
 routerRoutes.get('/:id/webfig-session', routerController.createWebfigSession);
 
-routerRoutes.use(authMiddleware, roleMiddleware([Role.TECH_ADMIN, Role.TECHNICIAN]));
+routerRoutes.use(authMiddleware, roleMiddleware([Role.TECH_ADMIN, Role.SUPER_ADMIN, Role.TECHNICIAN]));
 
 routerRoutes.post('/', routerController.create);
 routerRoutes.get('/', routerController.getAll);

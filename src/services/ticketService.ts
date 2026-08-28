@@ -527,7 +527,10 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
   if (!routerId) {
     throw { status: 400, message: 'Router wajib dipilih sebelum menyimpan survey' };
   }
-  const router = await prismaClient.router.findUnique({ where: { id: routerId } });
+  const router = await prismaClient.router.findUnique({
+    where: { id: routerId },
+    include: { _count: { select: { profiles: true } } },
+  });
   if (!router) {
     throw { status: 404, message: 'Router tidak ditemukan' };
   }
@@ -535,6 +538,14 @@ async function completeSurvey(ticketId: number, data: any, actor?: User) {
   const existingPppProfile = ticket.order?.user?.profile?.pppProfile ?? null;
   if (!profileId) {
     throw { status: 400, message: 'Profil pelanggan belum lengkap' };
+  }
+  const currentRouterId = ticket.order?.user?.profile?.routerId;
+  const currentCapacity = router.capacity ?? 40;
+  if (currentRouterId !== routerId && router._count.profiles >= currentCapacity) {
+    throw {
+      status: 400,
+      message: `Router '${router.name}' sudah mencapai batas kapasitas penuh (${router._count.profiles}/${currentCapacity} Pelanggan). Silakan pilih router lain.`,
+    };
   }
 
   const inventoryIds = surveyItems.map((item) => item.inventoryItemId);

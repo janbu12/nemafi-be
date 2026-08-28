@@ -337,7 +337,25 @@ async function updateUser(id: number, input: any) {
     if (data.subdistrict !== undefined) profileUpdateData.subdistrict = data.subdistrict;
     if (data.latitude !== undefined) profileUpdateData.latitude = data.latitude;
     if (data.longitude !== undefined) profileUpdateData.longitude = data.longitude;
-    if (data.routerId !== undefined) profileUpdateData.routerId = data.routerId ? Number(data.routerId) : null;
+    if (data.routerId !== undefined) {
+        const nextRouterId = data.routerId ? Number(data.routerId) : null;
+        profileUpdateData.routerId = nextRouterId;
+        if (nextRouterId && nextRouterId !== existing.profile?.routerId) {
+            const targetRouter = await prismaClient.router.findUnique({
+                where: { id: nextRouterId },
+                include: { _count: { select: { profiles: true } } },
+            });
+            if (targetRouter) {
+                const currentCap = targetRouter.capacity ?? 40;
+                if (targetRouter._count.profiles >= currentCap) {
+                    throw {
+                        status: 400,
+                        message: `Router '${targetRouter.name}' sudah mencapai batas kapasitas maksimal (${targetRouter._count.profiles}/${currentCap} Pelanggan). Silakan pilih router lain.`,
+                    };
+                }
+            }
+        }
+    }
     if (data.pppUsername !== undefined) profileUpdateData.pppUsername = data.pppUsername;
     if (data.pppProfile !== undefined) profileUpdateData.pppProfile = data.pppProfile;
     if (data.isPppActive !== undefined) profileUpdateData.isPppActive = data.isPppActive;

@@ -400,6 +400,7 @@ model Router {
   port      Int?      @default(8728) // deprecated
   portApi   Int       @default(8728)
   portSsh   Int       @default(22)
+  capacity  Int       @default(40)
   profiles  Profile[]
   
   // -- Kolom baru untuk default PPP Profile --
