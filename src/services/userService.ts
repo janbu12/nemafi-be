@@ -1,6 +1,7 @@
 import { prismaClient } from '../application/prisma.js';
 import bcrypt from 'bcryptjs';
 import { createUserValidation, resetPasswordValidation, updateUserValidation, adminCreateCustomerValidation } from '../validation/userValidation.js';
+import { calculateProratedAmount } from '../utils/billingUtils.js';
 import { toUserDto } from '../utils/userDto.js';
 import { Role, User } from '@prisma/client';
 
@@ -244,10 +245,11 @@ async function createCustomer(actor: User, input: any) {
             }
         });
 
+        const { amount: proratedTotal } = calculateProratedAmount(selectedPackage.price);
         const order = await prisma.order.create({
             data: {
                 userId: newUser.id,
-                total: selectedPackage.price,
+                total: proratedTotal,
                 status: 'PENDING_REVIEW',
                 items: {
                     create: {

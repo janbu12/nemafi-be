@@ -4,6 +4,7 @@ import orderService, { type OrderWithDetails } from './orderService.js';
 import ticketService from './ticketService.js';
 import billingService from './billingService.js';
 import appSettingService from './appSettingService.js';
+import { calculateProratedAmount } from '../utils/billingUtils.js';
 
 function getActiveGateway() {
     return process.env.ACTIVE_PAYMENT_GATEWAY === 'midtrans' ? 'midtrans' : 'xendit';
@@ -307,7 +308,28 @@ async function verifyPaymentNotification(notificationBody: any, callbackToken?: 
                 if (!order) throw { status: 404, message: 'Order not found' };
                 await orderService.updateOrderStatus(entityId, 'SURVEY_SCHEDULED');
                 await ticketService.markTicketPaid(entityId);
-                await billingService.markLatestInvoicePaid(order.userId);
+                
+                // Create initial paid BillingInvoice for this registration order if none exists
+                const existingInvoice = await prismaClient.billingInvoice.findFirst({
+                    where: { userId: order.userId },
+                });
+                if (!existingInvoice) {
+                    const orderDate = new Date(order.createdAt);
+                    const { periodStart, periodEnd } = calculateProratedAmount(order.total, orderDate);
+                    await prismaClient.billingInvoice.create({
+                        data: {
+                            userId: order.userId,
+                            amount: order.total,
+                            periodStart,
+                            periodEnd,
+                            dueAt: periodEnd,
+                            status: 'PAID',
+                            paidAt: new Date(),
+                        },
+                    });
+                } else {
+                    await billingService.markLatestInvoicePaid(order.userId);
+                }
                 
                 const orderWithItems = await prismaClient.order.findUnique({
                     where: { id: entityId },

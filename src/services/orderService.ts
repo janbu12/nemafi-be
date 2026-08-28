@@ -4,6 +4,7 @@ import { Prisma, Role, Status } from "@prisma/client";
 import ticketService from "./ticketService.js";
 import pushSubscriptionService from "./pushSubscriptionService.js";
 import notificationService from "./notificationService.js";
+import { calculateProratedAmount } from "../utils/billingUtils.js";
 
 export type OrderWithDetails = Prisma.OrderGetPayload<{
     include: {
@@ -78,10 +79,11 @@ async function createOrder(userId: number, packageId: number) {
 
     if (!pkg) throw { status: 404, message: 'Package not found' };
 
+    const { amount: proratedTotal } = calculateProratedAmount(pkg.price);
     const order = await prismaClient.order.create({
         data: {
             userId,
-            total: pkg.price,
+            total: proratedTotal,
             status: 'PENDING_REVIEW',
             items: {
                 create: {
@@ -144,9 +146,8 @@ async function approveOrder(orderId: number, adminId: number, notes?: string) {
         },
     });
     if (!existingInvoice) {
-        const periodStart = now;
-        const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        const dueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const { periodStart, periodEnd } = calculateProratedAmount(updatedOrder.total, now);
+        const dueAt = periodEnd;
         await prismaClient.billingInvoice.create({
             data: {
                 userId: updatedOrder.userId,
