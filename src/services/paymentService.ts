@@ -11,10 +11,20 @@ function getActiveGateway() {
 }
 
 async function getMidtransConfig() {
-    const settings = await appSettingService.getSettingValues(['MIDTRANS_SERVER_KEY']);
-    const serverKey = (settings.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY || '').trim();
     const snapUrl = (process.env.MIDTRANS_SNAP_URL || (process.env.NODE_ENV === 'production' ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js')).trim();
-    const baseUrl = snapUrl.includes('sandbox') ? 'https://app.sandbox.midtrans.com/snap/v1/transactions' : 'https://app.midtrans.com/snap/v1/transactions';
+    const isSandbox = snapUrl.includes('sandbox');
+    const baseUrl = isSandbox ? 'https://app.sandbox.midtrans.com/snap/v1/transactions' : 'https://app.midtrans.com/snap/v1/transactions';
+    
+    const envKey = (process.env.MIDTRANS_SERVER_KEY || '').trim();
+    const settings = await appSettingService.getSettingValues(['MIDTRANS_SERVER_KEY']);
+    const dbKey = (settings.MIDTRANS_SERVER_KEY || '').trim();
+
+    let serverKey = envKey || dbKey;
+    // Prevent using sandbox key when hitting production URL if db has sandbox but env has live or vice versa
+    if (!isSandbox && serverKey.startsWith('SB-') && !envKey.startsWith('SB-') && envKey) {
+        serverKey = envKey;
+    }
+
     return { serverKey, baseUrl };
 }
 
