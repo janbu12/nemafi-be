@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "public"."Router" ADD COLUMN IF NOT EXISTS "capacity" INTEGER NOT NULL DEFAULT 40;
