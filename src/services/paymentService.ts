@@ -12,8 +12,8 @@ function getActiveGateway() {
 
 async function getMidtransConfig() {
     const settings = await appSettingService.getSettingValues(['MIDTRANS_SERVER_KEY']);
-    const serverKey = settings.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY || '';
-    const snapUrl = process.env.MIDTRANS_SNAP_URL || (process.env.NODE_ENV === 'production' ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js');
+    const serverKey = (settings.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY || '').trim();
+    const snapUrl = (process.env.MIDTRANS_SNAP_URL || (process.env.NODE_ENV === 'production' ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js')).trim();
     const baseUrl = snapUrl.includes('sandbox') ? 'https://app.sandbox.midtrans.com/snap/v1/transactions' : 'https://app.midtrans.com/snap/v1/transactions';
     return { serverKey, baseUrl };
 }
@@ -63,7 +63,12 @@ async function createMidtransPaymentToken(orderId: number, customerName: string,
         const transactionData = {
             transaction_details: { order_id: midtransOrderId, gross_amount: Math.ceil(order.total) },
             customer_details: { first_name: customerName, email: customerEmail, phone: customerPhone },
-            item_details: order.items.map(item => ({ id: item.package.id.toString(), price: Math.ceil(item.package.price), quantity: 1, name: item.package.name })),
+            item_details: [{
+                id: (order.items[0]?.package.id || order.id).toString(),
+                price: Math.ceil(order.total),
+                quantity: 1,
+                name: order.items[0]?.package.name ? `Paket ${order.items[0].package.name}` : `Pendaftaran Layanan Internet`
+            }],
             callbacks: { finish: finishUrl, unfinish: unfinishUrl, error: errorUrl }
         };
 
