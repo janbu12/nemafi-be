@@ -219,6 +219,26 @@ async function rejectOrder(orderId: number, adminId: number, notes: string) {
         }
     });
 
+    // Close any tickets associated with this rejected order and log reason
+    const tickets = await prismaClient.ticket.findMany({ where: { orderId } });
+    if (tickets.length > 0) {
+        await prismaClient.ticket.updateMany({
+            where: { orderId },
+            data: { status: 'CLOSED' }
+        });
+        for (const t of tickets) {
+            await prismaClient.ticketHistory.create({
+                data: {
+                    ticketId: t.id,
+                    action: 'Pendaftaran Ditolak',
+                    description: `Pendaftaran ditolak oleh admin. Alasan: ${notes}`,
+                    actorId: adminId,
+                    actorType: 'ADMIN',
+                }
+            });
+        }
+    }
+
     emitOrderReviewed(updatedOrder);
     pushSubscriptionService.notifyAsync(
         { userIds: [updatedOrder.userId] },

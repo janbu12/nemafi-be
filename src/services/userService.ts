@@ -38,18 +38,20 @@ async function listUsers() {
         const latestInvoice = invoices[0] || null;
 
         // 1. Service Status
-        let serviceStatus: 'ACTIVE' | 'SUSPENDED' | 'PENDING_INSTALLATION' = 'PENDING_INSTALLATION';
-        const hasPendingInstallationOrder = latestOrder && [
-            'PENDING_REVIEW',
+        let serviceStatus: 'ACTIVE' | 'SUSPENDED' | 'PENDING_INSTALLATION' | 'PENDING_REVIEW' | 'REJECTED' = 'PENDING_INSTALLATION';
+
+        if (latestOrder?.status === 'REVIEW_REJECTED' || latestOrder?.status === 'CANCELLED') {
+            serviceStatus = 'REJECTED';
+        } else if (latestOrder?.status === 'PENDING_REVIEW') {
+            serviceStatus = 'PENDING_REVIEW';
+        } else if (latestOrder && [
             'REVIEW_APPROVED',
             'WAITING_FOR_ASSIGNMENT',
             'SURVEY_SCHEDULED',
             'SURVEY_COMPLETED',
             'TECHNICIAN_ASSIGNED',
             'INSTALLATION_IN_PROGRESS',
-        ].includes(latestOrder.status);
-
-        if (hasPendingInstallationOrder) {
+        ].includes(latestOrder.status)) {
             serviceStatus = 'PENDING_INSTALLATION';
         } else if (profile && profile.isPppActive === false) {
             serviceStatus = 'SUSPENDED';
@@ -109,6 +111,8 @@ async function listUsers() {
                 ? {
                       id: latestOrder.id,
                       status: latestOrder.status,
+                      reviewNotes: latestOrder.reviewNotes,
+                      reviewedAt: latestOrder.reviewedAt,
                       createdAt: latestOrder.createdAt,
                   }
                 : null,
