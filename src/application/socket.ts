@@ -13,6 +13,13 @@ export function initSocket(server: Server) {
 
   ioInstance = io;
 
+  io.on('connection', (socket) => {
+    console.log(`[Socket.IO] Client terhubung | Socket ID: ${socket.id}`);
+    socket.on('disconnect', (reason) => {
+      console.log(`[Socket.IO] Client terputus | Socket ID: ${socket.id} (Alasan: ${reason})`);
+    });
+  });
+
   const terminalNamespace = io.of('/terminal');
 
   terminalNamespace.on('connection', (socket) => {
@@ -96,40 +103,48 @@ export function initSocket(server: Server) {
 
 export function emitOrderPending(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'orders:pending' | Data Order #${payload?.id || payload?.orderId || ''}`);
   ioInstance.emit('orders:pending', payload);
 }
 
 export function emitOrderReviewed(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'orders:reviewed' | Order #${payload?.id} Status: ${payload?.status}`);
   ioInstance.emit('orders:reviewed', payload);
 }
 
 export function emitTicketMembersUpdated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:members-updated' | Ticket #${payload?.ticketId}`);
   ioInstance.emit('tickets:members-updated', payload);
 }
 
 export function emitTicketAssignmentUpdated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:assignment-updated' | Ticket #${payload?.ticketId}`);
   ioInstance.emit('tickets:assignment-updated', payload);
 }
 
 export function emitTicketUpdated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:updated' | Ticket #${payload?.id || payload?.ticketId}`);
   ioInstance.emit('tickets:updated', payload);
 }
 
 export function emitBillingUpdated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'billing:updated' | Data:`, payload);
   ioInstance.emit('billing:updated', payload);
 }
 
 export function emitNotificationCreated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'notifications:new' | Judul: ${payload?.title}`);
   ioInstance.emit('notifications:new', payload);
 }
 
 export function emitNotificationCountUpdated(payload: any) {
   if (!ioInstance) return;
+  console.log(`[Socket.IO] Event dipancarkan: 'notifications:count-updated' | Unread: ${payload?.unreadCount}`);
   ioInstance.emit('notifications:count-updated', payload);
 }

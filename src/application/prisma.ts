@@ -35,5 +35,7 @@ prismaClient.$on('info', (e) => {
 });
 
 prismaClient.$on('query', (e) => {
-    logger.info(e);
+    if (process.env.DEBUG_PRISMA === 'true') {
+        logger.info(e);
+    }
 });
