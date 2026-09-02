@@ -103,48 +103,60 @@ export function initSocket(server: Server) {
 
 export function emitOrderPending(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'orders:pending' | Data Order #${payload?.id || payload?.orderId || ''}`);
+  const orderId = payload?.id || payload?.orderId || '-';
+  console.log(`[Socket.IO] Event dipancarkan: 'orders:pending' | Data Order #${orderId}`);
   ioInstance.emit('orders:pending', payload);
 }
 
 export function emitOrderReviewed(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'orders:reviewed' | Order #${payload?.id} Status: ${payload?.status}`);
+  const orderId = payload?.id || payload?.orderId || '-';
+  const status = payload?.status || 'REVIEWED';
+  console.log(`[Socket.IO] Event dipancarkan: 'orders:reviewed' | Order #${orderId} | Status: ${status}`);
   ioInstance.emit('orders:reviewed', payload);
 }
 
 export function emitTicketMembersUpdated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'tickets:members-updated' | Ticket #${payload?.ticketId}`);
+  const ticketId = payload?.ticketId || payload?.id || '-';
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:members-updated' | Ticket #${ticketId}`);
   ioInstance.emit('tickets:members-updated', payload);
 }
 
 export function emitTicketAssignmentUpdated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'tickets:assignment-updated' | Ticket #${payload?.ticketId}`);
+  const ticketId = payload?.ticketId || payload?.id || '-';
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:assignment-updated' | Ticket #${ticketId}`);
   ioInstance.emit('tickets:assignment-updated', payload);
 }
 
 export function emitTicketUpdated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'tickets:updated' | Ticket #${payload?.id || payload?.ticketId}`);
+  const ticketId = payload?.id || payload?.ticketId || '-';
+  const status = payload?.status || 'UPDATED';
+  console.log(`[Socket.IO] Event dipancarkan: 'tickets:updated' | Ticket #${ticketId} | Status: ${status}`);
   ioInstance.emit('tickets:updated', payload);
 }
 
 export function emitBillingUpdated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'billing:updated' | Data:`, payload);
+  const ref = payload?.invoiceId ? `Invoice #${payload.invoiceId}` : payload?.orderId ? `Order #${payload.orderId}` : 'Billing Data';
+  const status = payload?.status || payload?.type || 'UPDATED';
+  console.log(`[Socket.IO] Event dipancarkan: 'billing:updated' | ${ref} | Status: ${status}`);
   ioInstance.emit('billing:updated', payload);
 }
 
 export function emitNotificationCreated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'notifications:new' | Judul: ${payload?.title}`);
+  const title = payload?.title || payload?.notification?.title || 'Notifikasi Baru';
+  const user = payload?.userId ? `(User #${payload.userId})` : '(Semua User)';
+  console.log(`[Socket.IO] Event dipancarkan: 'notifications:new' | Judul: "${title}" ${user}`);
   ioInstance.emit('notifications:new', payload);
 }
 
 export function emitNotificationCountUpdated(payload: any) {
   if (!ioInstance) return;
-  console.log(`[Socket.IO] Event dipancarkan: 'notifications:count-updated' | Unread: ${payload?.unreadCount}`);
+  const user = payload?.userId ? `(User #${payload.userId})` : '(Semua User)';
+  console.log(`[Socket.IO] Event dipancarkan: 'notifications:count-updated' | Sinkronisasi Notifikasi ${user}`);
   ioInstance.emit('notifications:count-updated', payload);
 }

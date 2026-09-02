@@ -66,9 +66,9 @@ async function createForTargets(options: TargetOptions, payload: NotificationPay
   );
 
   await Promise.all(
-    notifications.map(async () => {
-      emitNotificationCreated({ type: 'created' });
-      emitNotificationCountUpdated({ type: 'count-updated' });
+    notifications.map(async (n) => {
+      emitNotificationCreated({ type: 'created', title: n.title, userId: n.userId });
+      emitNotificationCountUpdated({ type: 'count-updated', userId: n.userId });
     })
   );
 
@@ -91,7 +91,7 @@ async function markAsRead(userId: number, id: number) {
         data: { readAt: new Date() },
       });
 
-  emitNotificationCountUpdated({ type: 'count-updated' });
+  emitNotificationCountUpdated({ type: 'count-updated', userId });
 
   return updated;
 }
@@ -102,7 +102,7 @@ async function markAllAsRead(userId: number) {
     data: { readAt: new Date() },
   });
 
-  emitNotificationCountUpdated({ type: 'count-updated' });
+  emitNotificationCountUpdated({ type: 'count-updated', userId });
 
   return { unreadCount: 0 };
 }
