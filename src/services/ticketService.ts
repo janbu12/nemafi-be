@@ -335,6 +335,10 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
       throw { status: 404, message: 'Ticket not found or you are not assigned to it' };
     }
 
+    if (['RESOLVED', 'CLOSED'].includes(ticket.status) && ['OPEN', 'SCHEDULED', 'IN_PROGRESS'].includes(status)) {
+      throw { status: 400, message: 'Status tiket yang sudah diselesaikan tidak dapat dimundurkan kembali ke status awal.' };
+    }
+
     if (ticket.scheduledAt && ['IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status)) {
       if (new Date() < ticket.scheduledAt) {
         throw { status: 400, message: 'Ticket cannot be started before scheduled time' };
@@ -1186,6 +1190,10 @@ async function updateSopProgress(ticketId: number, user: User, data: any) {
 
   if (!isAssignedLeader && !isMember && !isAdmin) {
     throw { status: 403, message: 'Anda tidak memiliki akses untuk memperbarui progres SOP tiket ini' };
+  }
+
+  if (['RESOLVED', 'CLOSED'].includes(ticket.status)) {
+    throw { status: 400, message: 'Tahapan progres SOP tidak dapat diubah kembali karena tiket telah diselesaikan.' };
   }
 
   let currentSop: SopStep[] = Array.isArray(ticket.sopProgress) && ticket.sopProgress.length > 0
