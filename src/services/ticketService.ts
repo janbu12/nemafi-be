@@ -4,6 +4,7 @@ import { emitTicketAssignmentUpdated, emitTicketMembersUpdated, emitTicketUpdate
 import { Prisma, Role, User } from '@prisma/client';
 import mikrotikService from './mikrotikService.js';
 import pushSubscriptionService from './pushSubscriptionService.js';
+import operationalNotificationService from './operationalNotificationService.js';
 
 type TicketHistoryActorType = 'SYSTEM' | 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
 
@@ -72,33 +73,59 @@ async function provisionPppProfileFromTicket(
   const pppPassword = profile.pppPassword || `ppp-${ticket.order.user.id}-pass`;
   const pppProfile = profile.pppProfile || pkg?.name || 'Default';
 
-  // Update profile status in database first
+  // 1. Simpan data kredensial PPPoE ke database
   const updatedProfile = await client.profile.update({
     where: { id: profile.id },
     data: {
       pppUsername,
       pppPassword,
       pppProfile,
-      isPppActive: true,
+      isPppActive: false, // Default false until successfully pushed to physical router
     },
     include: { router: true },
   });
 
-  await addHistory(
-    ticket.id,
-    'PPPoE activated',
-    `PPPoE ${pppUsername} aktif dengan profil ${pppProfile}`,
-    undefined,
-    client
-  );
-
-  // Sync to MikroTik router
+  // 2. Sinkronisasi ke Router MikroTik Fisik
   if (updatedProfile.routerId && updatedProfile.router) {
     try {
       await mikrotikService.addPppSecret(updatedProfile as any);
+
+      // Jika sukses inject ke MikroTik:
+      await client.profile.update({
+        where: { id: profile.id },
+        data: { isPppActive: true },
+      });
+
+      await addHistory(
+        ticket.id,
+        'Aktivasi PPPoE Berhasil',
+        `Akun PPPoE ${pppUsername} (Profil ${pppProfile}) berhasil diaktifkan pada Router ${updatedProfile.router.name} (${updatedProfile.router.host}).`,
+        undefined,
+        client
+      );
     } catch (err: any) {
-      console.warn(`[Mikrotik Activation Warning] Failed to activate on router: ${err.message}`);
+      const errorMsg = err?.message || String(err);
+      console.warn(`[Mikrotik Activation Warning] Failed to activate on router: ${errorMsg}`);
+
+      // Catat log peringatan error aktivasi karena router down/unreachable ke riwayat tiket
+      await addHistory(
+        ticket.id,
+        'Peringatan Aktivasi MikroTik (Pending Sync)',
+        `Router tujuan '${updatedProfile.router.name}' (${updatedProfile.router.host}) tidak dapat dijangkau (${errorMsg}). Akun PPPoE tersimpan di database dan status aktivasi fisik berstatus PENDING SYNC.`,
+        undefined,
+        client
+      );
+
+      operationalNotificationService.notifyRouterStatus(updatedProfile.router.id, updatedProfile.router.name, 'offline');
     }
+  } else {
+    await addHistory(
+      ticket.id,
+      'Peringatan Router Belum Ditentukan',
+      `Akun PPPoE ${pppUsername} digenerate di database, tetapi pelanggan belum dialokasikan ke Node Router MikroTik.`,
+      undefined,
+      client
+    );
   }
 }
 
@@ -381,7 +408,7 @@ async function updateStatus(ticketId: number, technician: User, data: any) {
 async function getAllTickets() {
   const tickets = await prismaClient.ticket.findMany({
     include: {
-      order: { include: { user: { include: { profile: true } } } },
+      order: { include: { user: { include: { profile: { include: { router: true } } } } } },
       technician: true,
       category: true,
       attachments: true,
@@ -402,14 +429,14 @@ async function getMyTickets(technician: User) {
           ],
         },
         include: {
-          order: { include: { user: { include: { profile: true } } } },
+          order: { include: { user: { include: { profile: { include: { router: true } } } } } },
           category: true,
           installationSurvey: true,
           technician: true,
           attachments: true,
           members: { include: { technician: true } },
           history: {
-            select: { action: true, createdAt: true },
+            select: { action: true, description: true, createdAt: true },
             orderBy: { createdAt: 'desc' },
           },
         },
