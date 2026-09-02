@@ -77,6 +77,24 @@ async function testConnection(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+async function testConnectionConfig(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { host, user, password, portApi } = req.body;
+    if (!host || !user || !password) {
+      throw { status: 400, message: 'Host, user, dan password wajib diisi untuk tes koneksi.' };
+    }
+    const result = await mikrotikService.testConnectionConfig({
+      host: host.trim(),
+      user: user.trim(),
+      password: password.trim(),
+      portApi: portApi ? Number(portApi) : 8728,
+    });
+    return success(res, result, result.message);
+  } catch (e) {
+    next(e);
+  }
+}
+
 async function addPppoeUser(req: Request, res: Response, next: NextFunction) {
   try {
     const id = Number(req.params.id);
@@ -378,6 +396,7 @@ export default {
   update,
   remove,
   testConnection,
+  testConnectionConfig,
   addPppoeUser,
   activeUsers,
   createWebfigSession,

@@ -246,17 +246,54 @@ async function getActiveUsers(routerId: number) {
 }
 
 /**
- * Mengetes koneksi ke sebuah router.
+ * Mengetes koneksi ke sebuah router yang sudah tersimpan di database.
  */
 async function testConnection(routerId: number) {
   try {     
    const router = await getRouter(routerId);
    if (isSimulation(router)) {
-    return { success: true, message: 'Simulation connection successful.' };
+    return { success: true, message: 'Koneksi mode simulasi berhasil.' };
    }
-    return await withRouterApi(routerId, async () => ({ success: true, message: 'Connection successful.' }));
+    return await withRouterApi(routerId, async () => ({ success: true, message: 'Koneksi ke router MikroTik berhasil!' }));
   } catch (err: any) {
-    throw { status: 500, message: `Failed to connect to router: ${err.message}` };
+    throw { status: 500, message: `Gagal terhubung ke router: ${err.message}` };
+  }
+}
+
+/**
+ * Mengetes koneksi ke router menggunakan parameter host, user, password secara langsung sebelum disimpan.
+ */
+async function testConnectionConfig(config: { host: string; user: string; password: string; portApi?: number }) {
+  if (process.env.MIKROTIK_SIMULATION === 'true' || config.host === SIMULATION_HOST) {
+    return { success: true, message: 'Koneksi mode simulasi berhasil.' };
+  }
+
+  const client = new RouterOSClient({
+    host: config.host,
+    username: config.user,
+    password: config.password,
+    port: config.portApi || 8728,
+    tls: false,
+    timeout: 5000,
+  });
+
+  try {
+    const api = await client.connect();
+    try {
+      await api.send(['/system/resource/print']);
+      return { success: true, message: 'Koneksi ke router MikroTik berhasil terverifikasi!' };
+    } finally {
+      await client.close();
+    }
+  } catch (err: any) {
+    const errorMsg = err?.message || String(err);
+    if (errorMsg.includes('ECONNREFUSED')) {
+      throw { status: 503, message: `Tidak dapat terhubung ke MikroTik (${config.host}:${config.portApi || 8728}). Port API MikroTik ditolak atau dinonaktifkan.` };
+    }
+    if (errorMsg.includes('ETIMEDOUT') || errorMsg.includes('timeout')) {
+      throw { status: 504, message: `Koneksi ke MikroTik (${config.host}) timeout. Periksa Alamat IP Host.` };
+    }
+    throw { status: 400, message: `Gagal terhubung ke MikroTik: ${errorMsg}` };
   }
 }
 
@@ -422,6 +459,7 @@ export default {
   enablePppSecret,
   getActiveUsers,
   testConnection,
+  testConnectionConfig,
   createPppSecret,
   syncPackageToAllRouters,
   deletePackageFromAllRouters,

@@ -9,8 +9,8 @@ export const createRouterValidation = z.object({
   portApi: z.number().int().positive().default(8728),
   portSsh: z.number().int().positive().default(22),
   capacity: z.coerce.number().int().positive().default(40),
-  pppLocalAddress: z.string().optional(),
-  pppRemoteAddress: z.string().optional(),
+  pppLocalAddress: z.string().nullish(),
+  pppRemoteAddress: z.string().nullish(),
 });
 
 export const updateRouterValidation = z.object({
@@ -22,6 +22,6 @@ export const updateRouterValidation = z.object({
   portApi: z.number().int().positive().optional(),
   portSsh: z.number().int().positive().optional(),
   capacity: z.coerce.number().int().positive().optional(),
-  pppLocalAddress: z.string().optional(),
-  pppRemoteAddress: z.string().optional(),
+  pppLocalAddress: z.string().nullish(),
+  pppRemoteAddress: z.string().nullish(),
 });
